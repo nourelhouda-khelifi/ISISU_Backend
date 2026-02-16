@@ -1,0 +1,31 @@
+services:
+
+  postgres:
+    image: postgres:15
+    container_name: isisu_postgres
+    environment:
+      POSTGRES_DB: isisu_db
+      POSTGRES_USER: isisu_user
+      POSTGRES_PASSWORD: isisu_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  springboot:
+    build: .
+    container_name: isisu_backend
+    depends_on:
+      - postgres
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/isisu_db
+      SPRING_DATASOURCE_USERNAME: isisu_user
+      SPRING_DATASOURCE_PASSWORD: isisu_password
+      SPRING_SECURITY_USER_NAME: admin
+      SPRING_SECURITY_USER_PASSWORD: admin123
+      SPRING_SECURITY_USER_ROLES: ADMIN
+
+volumes:
+  postgres_data:
