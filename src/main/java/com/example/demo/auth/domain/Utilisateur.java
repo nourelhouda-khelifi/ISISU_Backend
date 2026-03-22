@@ -48,7 +48,7 @@ public class Utilisateur {
     @Column(nullable = false, unique = true)
     private String email;
 
-    @Column(nullable = false)
+    @Column(nullable = false, name = "mot_de_passe_hash")
     private String motDePasseHash;
 
     @Column(nullable = false, length = 50)
@@ -57,13 +57,16 @@ public class Utilisateur {
     @Column(nullable = false, length = 50)
     private String prenom;
 
+    @Column(length = 20)
     private String telephone;
 
     @Column(length = 60)
     private String nationalite;
 
+    @Column(name = "date_naissance")
     private LocalDate dateNaissance;
 
+    @Column(name = "photo_url")
     private String photoUrl;
 
     @Enumerated(EnumType.STRING)
@@ -74,40 +77,47 @@ public class Utilisateur {
     @Column(nullable = false)
     private StatutCompte statut;
 
-    @Column(nullable = false)
+    @Column(nullable = false, name = "email_verifie")
     private boolean emailVerifie = false;
 
-    @Column(nullable = false)
+    @Column(nullable = false, name = "accepte_cgu")
     private boolean accepteCgu;
 
-    @Column(nullable = false)
+    @Column(nullable = false, name = "consentement_donnees")
     private boolean consentementDonnees;
 
-    @Column(nullable = false)
+    @Column(nullable = false, name = "consentement_contact")
     private boolean consentementContact;
 
+    @Column(name = "date_verification_email")
     private LocalDateTime dateVerificationEmail;
 
-    @Column(nullable = false)
+    @Column(nullable = false, name = "date_inscription")
     private LocalDateTime dateInscription;
 
+    @Column(name = "derniere_connexion")
     private LocalDateTime derniereConnexion;
 
     @Column(name = "code_ine", unique = true, length = 11)
     private String codeINE;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "niveau_fie")
     private NiveauFIE niveauFIE;
 
+    @Column(name = "promotion")
     private Integer promotion;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "parcours_origine")
     private ParcoursOrigine parcoursOrigine;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "niveau_etudes")
     private NiveauEtudes niveauEtudes;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "secteur_activite")
     private SecteurActivite secteurActivite;
 
     @Column(length = 255)
@@ -119,6 +129,7 @@ public class Utilisateur {
     @Column(length = 100)
     private String ville;
 
+    @Column(name = "date_modification")
     private LocalDateTime dateModification;
 
     @PrePersist
