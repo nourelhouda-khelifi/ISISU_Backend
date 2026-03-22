@@ -1,5 +1,6 @@
 package com.example.demo.profil.presentation;
 
+import com.example.demo.common.config.JwtUser;
 import com.example.demo.profil.application.ProfilService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -94,13 +95,15 @@ public class ProfilController {
      */
     private Long extractUserIdFromToken() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || authentication.getName() == null) {
+        if (authentication == null) {
             throw new RuntimeException("User not authenticated");
         }
-        try {
-            return Long.parseLong(authentication.getName());
-        } catch (NumberFormatException e) {
-            throw new RuntimeException("Invalid user ID in token", e);
+        
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof JwtUser jwtUser) {
+            return jwtUser.userId();
         }
+        
+        throw new RuntimeException("Invalid token - cannot extract user ID");
     }
 }
