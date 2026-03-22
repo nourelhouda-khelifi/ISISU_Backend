@@ -2,7 +2,7 @@
 -- Création du schéma Référentiel FIE3
 
 -- Table des Unités d'Enseignement
-CREATE TABLE unites_enseignement (
+CREATE TABLE IF NOT EXISTS unites_enseignement (
     id SERIAL PRIMARY KEY,
     code VARCHAR(20) NOT NULL UNIQUE,
     libelle VARCHAR(100) NOT NULL,
@@ -11,7 +11,7 @@ CREATE TABLE unites_enseignement (
 );
 
 -- Table des Modules FIE
-CREATE TABLE modules_fie (
+CREATE TABLE IF NOT EXISTS modules_fie (
     id SERIAL PRIMARY KEY,
     code VARCHAR(20) NOT NULL UNIQUE,
     nom VARCHAR(150) NOT NULL,
@@ -27,14 +27,14 @@ CREATE TABLE modules_fie (
 );
 
 -- Table de jonction : modules prérequis
-CREATE TABLE modules_prerequis (
+CREATE TABLE IF NOT EXISTS modules_prerequis (
     module_id BIGINT NOT NULL REFERENCES modules_fie(id),
     prerequis_id BIGINT NOT NULL REFERENCES modules_fie(id),
     PRIMARY KEY (module_id, prerequis_id)
 );
 
 -- Table des Compétences
-CREATE TABLE competences (
+CREATE TABLE IF NOT EXISTS competences (
     id SERIAL PRIMARY KEY,
     intitule VARCHAR(255) NOT NULL,
     description TEXT,
@@ -45,7 +45,7 @@ CREATE TABLE competences (
 );
 
 -- Table de jonction : compétences prérequis
-CREATE TABLE competences_prerequis (
+CREATE TABLE IF NOT EXISTS competences_prerequis (
     competence_id BIGINT NOT NULL REFERENCES competences(id),
     prerequis_id BIGINT NOT NULL REFERENCES competences(id),
     PRIMARY KEY (competence_id, prerequis_id)
