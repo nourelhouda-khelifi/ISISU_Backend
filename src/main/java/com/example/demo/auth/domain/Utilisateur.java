@@ -110,6 +110,17 @@ public class Utilisateur {
     @Enumerated(EnumType.STRING)
     private SecteurActivite secteurActivite;
 
+    @Column(length = 255)
+    private String adresse;
+
+    @Column(length = 10)
+    private String codePostal;
+
+    @Column(length = 100)
+    private String ville;
+
+    private LocalDateTime dateModification;
+
     @PrePersist
     public void onCreate() {
         normalizeData();
@@ -127,6 +138,7 @@ public class Utilisateur {
     public void onUpdate() {
         normalizeData();
         validateRoleConsistency();
+        dateModification = LocalDateTime.now();
     }
 
     private void normalizeData() {
