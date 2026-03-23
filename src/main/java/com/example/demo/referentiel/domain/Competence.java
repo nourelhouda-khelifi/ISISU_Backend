@@ -50,7 +50,7 @@ public class Competence {
      * Numéro d'ordre dans le syllabus (1 à 42)
      * Utilisé pour afficher les compétences dans l'ordre du syllabus
      */
-    @Column(nullable = false)
+    @Column(name = "numero_ordre", nullable = false)
     private Integer numeroOrdre;
 
     /**
@@ -59,7 +59,7 @@ public class Competence {
      * 2 = moyen    → questions MOYEN
      * 3 = avancé   → questions DIFFICILE
      */
-    @Column(nullable = false)
+    @Column(name = "niveau_attendu", nullable = false)
     private Integer niveauAttendu;
 
     /**

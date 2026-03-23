@@ -106,6 +106,17 @@ public class ReferentielController {
         log.info("GET /referentiel/modules/{}/competences", moduleId);
         return ResponseEntity.ok(referentielService.getCompetencesByModule(moduleId));
     }
+
+    /**
+     * GET /api/v1/referentiel/competences
+     * Récupérer toutes les compétences
+     */
+    @GetMapping("/competences")
+    @Operation(summary = "Lister toutes les compétences", description = "Récupère les 42 compétences du syllabus FIE3")
+    public ResponseEntity<List<CompetenceDTO>> getAllCompetences() {
+        log.info("GET /referentiel/competences");
+        return ResponseEntity.ok(referentielService.getAllCompetences());
+    }
     
     /**
      * GET /api/v1/referentiel/competences/{id}

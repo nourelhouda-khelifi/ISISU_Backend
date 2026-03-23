@@ -68,19 +68,19 @@ public class ModuleFIE {
     /**
      * Volumes horaires extraits du syllabus
      */
-    @Column(nullable = false)
+    @Column(name = "heures_cm", nullable = false)
     private Integer heuresCM;
 
-    @Column(nullable = false)
+    @Column(name = "heures_td", nullable = false)
     private Integer heuresTD;
 
-    @Column(nullable = false)
+    @Column(name = "heures_tp", nullable = false)
     private Integer heuresTP;
 
-    @Column(nullable = false)
+    @Column(name = "heures_projet", nullable = false)
     private Integer heuresProjet;
 
-    @Column(nullable = false)
+    @Column(name = "heures_total", nullable = false)
     private Integer heuresTotal;
 
     /**
@@ -94,7 +94,7 @@ public class ModuleFIE {
      * Texte des prérequis extrait du syllabus
      * Exemple : "Bases algorithmique et programmation Java"
      */
-    @Column(columnDefinition = "TEXT")
+    @Column(name = "prerequis_texte", columnDefinition = "TEXT")
     private String prerequisTexte;
 
     /**

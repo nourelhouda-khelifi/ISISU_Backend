@@ -1,5 +1,6 @@
 package com.example.demo.referentiel.application;
 
+import com.example.demo.common.exception.NotFoundException;
 import com.example.demo.referentiel.domain.Competence;
 import com.example.demo.referentiel.domain.ModuleFIE;
 import com.example.demo.referentiel.domain.UniteEnseignement;
@@ -38,7 +39,7 @@ public class ReferentielService {
     public UniteEnseignementDTO getUniteEnseignement(Long id) {
         log.info("Fetching UE with ID: {}", id);
         UniteEnseignement ue = uniteEnseignementRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Unité d'enseignement not found with id: " + id));
+                .orElseThrow(() -> new NotFoundException("Unité d'enseignement not found with id: " + id));
         return convertToUniteEnseignementDTO(ue);
     }
     
@@ -59,7 +60,7 @@ public class ReferentielService {
     public ModuleFIEDTO getModuleById(Long id) {
         log.info("Fetching module with ID: {}", id);
         ModuleFIE module = moduleFIERepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Module not found with id: " + id));
+                .orElseThrow(() -> new NotFoundException("Module not found with id: " + id));
         return convertToModuleFIEDTO(module);
     }
     
@@ -69,7 +70,7 @@ public class ReferentielService {
     public ModuleFIEDTO getModuleByCode(String code) {
         log.info("Fetching module with code: {}", code);
         ModuleFIE module = moduleFIERepository.findByCode(code)
-                .orElseThrow(() -> new RuntimeException("Module not found with code: " + code));
+                .orElseThrow(() -> new NotFoundException("Module not found with code: " + code));
         return convertToModuleFIEDTO(module);
     }
     
@@ -112,7 +113,7 @@ public class ReferentielService {
     public CompetenceDTO getCompetence(Long id) {
         log.info("Fetching competence with ID: {}", id);
         Competence competence = competenceRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Competence not found with id: " + id));
+                .orElseThrow(() -> new NotFoundException("Competence not found with id: " + id));
         return convertToCompetenceDTO(competence);
     }
     
@@ -123,6 +124,18 @@ public class ReferentielService {
         log.info("Fetching competences for module: {}", moduleId);
         return competenceRepository.findByModuleIdOrderedByNumero(moduleId)
                 .stream()
+                .map(this::convertToCompetenceDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Récupérer toutes les compétences (42 du syllabus FIE3)
+     */
+    public List<CompetenceDTO> getAllCompetences() {
+        log.info("Fetching all competences");
+        return competenceRepository.findAll()
+                .stream()
+                .sorted((c1, c2) -> c1.getNumeroOrdre().compareTo(c2.getNumeroOrdre()))
                 .map(this::convertToCompetenceDTO)
                 .collect(Collectors.toList());
     }

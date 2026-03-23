@@ -38,7 +38,9 @@ public class SecurityConfig {
                                 "/api/v1/auth/otp/renvoyer",
                                 "/api/v1/auth/login",
                                 "/api/v1/users",
-                                "/api/v1/profil/*"
+                                "/api/v1/profil/*",
+                                "/api/v1/referentiel/**",
+                                "/api/v1/questions/**"
                             ).permitAll()
                         .anyRequest().authenticated()
                 )
