@@ -38,4 +38,12 @@ public interface ModuleFIERepository extends JpaRepository<ModuleFIE, Long> {
      */
     @Query("SELECT m FROM ModuleFIE m WHERE m.uniteEnseignement.id = :ueId ORDER BY m.code")
     List<ModuleFIE> findByUniteEnseignementId(@Param("ueId") Long ueId);
+    
+    /**
+     * Récupérer les modules qui dépendent d'un module donné
+     * (i.e., les modules qui ont celui-ci comme prérequis)
+     * Utilisé pour calculer les dépendances bloquantes
+     */
+    @Query("SELECT m FROM ModuleFIE m JOIN m.modulesPrerequisList p WHERE p.id = :moduleId")
+    List<ModuleFIE> findDependentModules(@Param("moduleId") Long moduleId);
 }

@@ -39,9 +39,10 @@ public class SecurityConfig {
                                 "/api/v1/auth/login",
                                 "/api/v1/users",
                                 "/api/v1/profil/*",
-                                "/api/v1/referentiel/**",
-                                "/api/v1/questions/**"
+                                "/api/v1/referentiel/**"
                             ).permitAll()
+                        .requestMatchers("/api/v1/questions/**").authenticated()
+                        .requestMatchers("/api/v1/admin/**").authenticated()
                         .anyRequest().authenticated()
                 )
                         .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

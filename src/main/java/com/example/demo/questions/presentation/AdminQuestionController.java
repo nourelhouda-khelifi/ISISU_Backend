@@ -1,0 +1,192 @@
+package com.example.demo.questions.presentation;
+
+import com.example.demo.questions.application.QuestionService;
+import com.example.demo.questions.domain.Choix;
+import com.example.demo.questions.domain.Question;
+import com.example.demo.questions.presentation.dto.ChoixDTO;
+import com.example.demo.questions.presentation.dto.CreateChoixDTO;
+import com.example.demo.questions.presentation.dto.CreateQuestionDTO;
+import com.example.demo.questions.presentation.dto.QuestionDTO;
+import com.example.demo.questions.presentation.dto.UpdateQuestionDTO;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+/**
+ * API REST Admin — Gestion de la Banque de Questions
+ *
+ * ⚠️ Toutes les routes sont PROTÉGÉES (authentification requise)
+ * Rôle requis : ADMIN
+ *
+ * Endpoints :
+ *   - POST   /api/v1/admin/questions              → créer une question
+ *   - PUT    /api/v1/admin/questions/{id}         → modifier une question
+ *   - DELETE /api/v1/admin/questions/{id}         → supprimer une question
+ *   - POST   /api/v1/admin/questions/{id}/activer  → activer
+ *   - POST   /api/v1/admin/questions/{id}/desactiver → désactiver
+ */
+@RestController
+@RequestMapping("/api/v1/admin/questions")
+@RequiredArgsConstructor
+@Slf4j
+@Tag(name = "Admin Questions", description = "Endpoints for admin question management")
+@SecurityRequirement(name = "Bearer Authentication")
+public class AdminQuestionController {
+
+    private final QuestionService questionService;
+
+    /**
+     * Créer une nouvelle question (admin)
+     * POST /api/v1/admin/questions
+     *
+     * Exemple request :
+     * {
+     *   "enonce": "Quelle est la capitale du France ?",
+     *   "type": "QCM_SIMPLE",
+     *   "difficulte": "FACILE",
+     *   "dureeSecondes": 30,
+     *   "competenceIds": [1, 2],
+     *   "choix": [
+     *     {"contenu": "Paris", "estCorrect": true, "ordre": 1},
+     *     {"contenu": "Lyon", "estCorrect": false, "ordre": 2}
+     *   ]
+     * }
+     */
+    @PostMapping
+    public ResponseEntity<QuestionDTO> creerQuestion(
+        @RequestBody CreateQuestionDTO dto
+    ) {
+        log.info("POST /admin/questions - créer: type={}, difficulte={}", 
+            dto.getType(), dto.getDifficulte());
+
+        // Convertir DTOs en entités Choix
+        List<Choix> choix = dto.getChoix().stream()
+            .map(c -> Choix.builder()
+                .contenu(c.getContenu())
+                .estCorrect(c.isEstCorrect())
+                .ordre(c.getOrdre())
+                .build())
+            .collect(Collectors.toList());
+
+        // Créer la question
+        Question question = questionService.creerQuestion(
+            dto.getEnonce(),
+            dto.getType(),
+            dto.getDifficulte(),
+            dto.getDureeSecondes(),
+            dto.getCompetenceIds(),
+            choix
+        );
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(toDTO(question));
+    }
+
+    /**
+     * Modifier une question existante (admin)
+     * PUT /api/v1/admin/questions/{id}
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<QuestionDTO> modifierQuestion(
+        @PathVariable Long id,
+        @RequestBody UpdateQuestionDTO dto
+    ) {
+        log.info("PUT /admin/questions/{} - modifier", id);
+
+        // Convertir DTOs en entités Choix
+        List<Choix> choix = dto.getChoix().stream()
+            .map(c -> Choix.builder()
+                .contenu(c.getContenu())
+                .estCorrect(c.isEstCorrect())
+                .ordre(c.getOrdre())
+                .build())
+            .collect(Collectors.toList());
+
+        // Modifier la question
+        Question question = questionService.modifierQuestion(
+            id,
+            dto.getEnonce(),
+            dto.getType(),
+            dto.getDifficulte(),
+            dto.getDureeSecondes(),
+            dto.isActif(),
+            dto.getCompetenceIds(),
+            choix
+        );
+
+        return ResponseEntity.ok(toDTO(question));
+    }
+
+    /**
+     * Supprimer une question (admin)
+     * DELETE /api/v1/admin/questions/{id}
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> supprimerQuestion(@PathVariable Long id) {
+        log.info("DELETE /admin/questions/{}", id);
+        questionService.supprimerQuestion(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Activer une question (admin)
+     * POST /api/v1/admin/questions/{id}/activer
+     */
+    @PostMapping("/{id}/activer")
+    public ResponseEntity<QuestionDTO> activerQuestion(@PathVariable Long id) {
+        log.info("POST /admin/questions/{}/activer", id);
+        questionService.activerQuestion(id);
+        Question question = questionService.getQuestionById(id);
+        return ResponseEntity.ok(toDTO(question));
+    }
+
+    /**
+     * Désactiver une question (admin)
+     * POST /api/v1/admin/questions/{id}/desactiver
+     */
+    @PostMapping("/{id}/desactiver")
+    public ResponseEntity<QuestionDTO> desactiverQuestion(@PathVariable Long id) {
+        log.info("POST /admin/questions/{}/desactiver", id);
+        questionService.desactiverQuestion(id);
+        Question question = questionService.getQuestionById(id);
+        return ResponseEntity.ok(toDTO(question));
+    }
+
+    /**
+     * Convertir une entité Question en DTO
+     * (masquer estCorrect, réponses correctes)
+     */
+    private QuestionDTO toDTO(Question question) {
+        List<ChoixDTO> choixDTOs = question.getChoix().stream()
+            .map(choix -> new ChoixDTO(
+                choix.getId(),
+                choix.getContenu(),
+                choix.getOrdre()
+                // estCorrect intentionnellement absent
+            ))
+            .collect(Collectors.toList());
+
+        List<Long> competenceIds = question.getCompetences().stream()
+            .map(com.example.demo.referentiel.domain.Competence::getId)
+            .collect(Collectors.toList());
+
+        return QuestionDTO.builder()
+            .id(question.getId())
+            .enonce(question.getEnonce())
+            .type(question.getType())
+            .difficulte(question.getDifficulte())
+            .ponderation(question.getDifficulte().getPonderation())
+            .dureeSecondes(question.getDureeSecondes())
+            .actif(question.isActif())
+            .dateCreation(question.getDateCreation())
+            .competenceIds(competenceIds)
+            .choix(choixDTOs)
+            .build();
+    }
+}

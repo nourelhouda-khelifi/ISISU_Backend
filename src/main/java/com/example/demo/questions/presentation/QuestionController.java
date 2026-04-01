@@ -6,6 +6,8 @@ import com.example.demo.questions.domain.enums.NiveauDifficulte;
 import com.example.demo.questions.domain.enums.TypeQuestion;
 import com.example.demo.questions.presentation.dto.ChoixDTO;
 import com.example.demo.questions.presentation.dto.QuestionDTO;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -18,21 +20,27 @@ import java.util.stream.Collectors;
 /**
  * API REST pour la Banque de Questions (Module 3)
  *
- * Endpoints Publics (pas d'authentification requise) :
+ * ⚠️ Toutes les routes GET sont PROTÉGÉES (authentification requise)
+ * Rôles acceptés: ETUDIANT_FIE3, CANDIDAT_VAE, ADMIN
+ *
+ * Endpoints Publics :
  *   - GET /api/v1/questions
  *   - GET /api/v1/questions/{id}
  *   - GET /api/v1/questions/competence/{competenceId}
  *   - GET /api/v1/questions/type/{type}
+ *   - GET /api/v1/questions/difficulte/{difficulte}
  *
- * À faire (avec authentification Admin) :
- *   - POST /api/v1/questions (créer)
- *   - PUT /api/v1/questions/{id} (modifier)
- *   - DELETE /api/v1/questions/{id} (supprimer)
+ * Admin Endpoints (POST/PUT/DELETE) :
+ *   - POST /api/v1/admin/questions (créer)
+ *   - PUT /api/v1/admin/questions/{id} (modifier)
+ *   - DELETE /api/v1/admin/questions/{id} (supprimer)
  */
 @RestController
 @RequestMapping("/api/v1/questions")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "Questions", description = "Endpoints for accessing questions (requires authentication)")
+@SecurityRequirement(name = "Bearer Authentication")
 public class QuestionController {
 
     private final QuestionService questionService;

@@ -182,4 +182,56 @@ public class QuestionService {
         Question q = getQuestionById(questionId);
         return q.getDifficulte().getPonderation();
     }
+
+    /**
+     * Modifier une question existante (admin)
+     */
+    public Question modifierQuestion(
+        Long questionId,
+        String enonce,
+        TypeQuestion type,
+        NiveauDifficulte difficulte,
+        Integer dureeSecondes,
+        boolean actif,
+        List<Long> competenceIds,
+        List<Choix> choix
+    ) {
+        log.info("Modification question: id={}", questionId);
+
+        Question q = getQuestionById(questionId);
+
+        // Charger les compétences
+        List<Competence> competences = competenceRepository.findAllById(competenceIds);
+        if (competences.isEmpty()) {
+            throw new IllegalArgumentException("Au moins une compétence obligatoire");
+        }
+
+        // Mettre à jour les champs
+        q.setEnonce(enonce);
+        q.setType(type);
+        q.setDifficulte(difficulte);
+        q.setDureeSecondes(dureeSecondes);
+        q.setActif(actif);
+        q.setCompetences(competences);
+
+        // Supprimer les anciens choix et en ajouter de nouveaux
+        q.getChoix().clear();
+        for (Choix c : choix) {
+            c.setQuestion(q);
+            q.getChoix().add(c);
+        }
+
+        return questionRepository.save(q);
+    }
+
+    /**
+     * Supprimer une question et ses choix (admin)
+     */
+    public void supprimerQuestion(Long questionId) {
+        log.info("Suppression question: id={}", questionId);
+        if (!questionRepository.existsById(questionId)) {
+            throw new IllegalArgumentException("Question non trouvée: " + questionId);
+        }
+        questionRepository.deleteById(questionId);
+    }
 }

@@ -139,3 +139,5 @@ docker compose ps
 ```
 
 
+admin@isisu.fr
+admin123

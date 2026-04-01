@@ -111,6 +111,26 @@ public class ModuleFIE {
     private List<ModuleFIE> modulesPrerequisList = new ArrayList<>();
 
     /**
+     * Niveau topologique dans le graphe de prérequis
+     * 0 = pas de prérequis (évalué en premier)
+     * 1 = prérequis du niveau 0
+     * 2 = prérequis du niveau 1
+     * Calculé automatiquement via tri topologique
+     */
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer niveau = 0;
+
+    /**
+     * Ordre du module dans son niveau
+     * Permet de fixer un ordre pour les modules au même niveau
+     * 1, 2, 3, ... (pour la reproductibilité des sessions)
+     */
+    @Column(nullable = false, name = "ordre_niveau")
+    @Builder.Default
+    private Integer ordreNiveau = 0;
+
+    /**
      * Compétences visées par ce module
      * Chaque compétence est liée aux questions, scores et recommandations
      */

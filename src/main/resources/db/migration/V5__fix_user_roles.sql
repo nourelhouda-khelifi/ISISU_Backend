@@ -11,5 +11,5 @@ WHERE statut != 'ACTIF' AND statut != 'INACTIF' AND statut != 'SUSPENDU';
 
 -- Ensure at least one ADMIN role exists
 INSERT INTO utilisateurs (email, mot_de_passe_hash, nom, prenom, role, statut, email_verifie, accepte_cgu, consentement_donnees, consentement_contact, date_inscription) 
-VALUES ('admin@isisu.fr', 'admin_hash', 'Admin', 'System', 'ADMIN', 'ACTIF', true, true, true, false, NOW())
+VALUES ('admin@isisu.fr', '$2a$12$zbyUkXqOJvF5TJH2D/g2QegBzybdSm7vXQDcFxGBFjP3ooFmzl4JO', 'Admin', 'System', 'ADMIN', 'ACTIF', true, true, true, false, NOW())
 ON CONFLICT (email) DO UPDATE SET role = 'ADMIN';
