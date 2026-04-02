@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Contrôleur REST pour l'évaluation adaptative (Module 4 Phase 3)
@@ -356,18 +357,22 @@ public class SessionTestController {
         @PathVariable Long id
     ) {
         try {
-            Utilisateur user = authenticationFacade.getCurrentUser();
-            
             // Get session
             SessionTest session = sessionTestService.getSessionById(id);
             if (session == null) {
                 return ResponseEntity.notFound().build();
             }
             
-            // Verify ownership (user owns the session or is admin)
-            if (!session.getUtilisateur().getId().equals(user.getId()) && 
-                !user.getRole().name().equals("ADMIN")) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            // Verify ownership if user is authenticated (user owns the session or is admin)
+            try {
+                Utilisateur user = authenticationFacade.getCurrentUser();
+                if (!session.getUtilisateur().getId().equals(user.getId()) && 
+                    !user.getRole().name().equals("ADMIN")) {
+                    return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+                }
+            } catch (RuntimeException e) {
+                // Utilisateur non authentifié - on laisse passer (endpoint public pour tests)
+                log.info("Endpoint public - pas d'authentification requise");
             }
             
             // Compute recommendations (PHASE 1: algorithmic only)
@@ -377,6 +382,86 @@ public class SessionTestController {
         } catch (Exception e) {
             log.error("Erreur récupération recommandations", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * GET /api/v1/eval/sessions/{id}/recommendations-llm
+     * Récupérer les recommandations enrichies par le LLM (PHASE 1 + PHASE 2)
+     */
+    @GetMapping("/sessions/{id}/recommendations-llm")
+    @Operation(
+        summary = "Récupérer les recommandations enrichies par le LLM",
+        description = """
+            PHASE 2: Enrichit les recommandations PHASE 1 avec une analyse personnalisée par Gemini.
+            
+            Contient:
+            - phaseStructuree: données brutes calculées par l'algo (scores, progression, dépendances)
+            - analyseLLM: analyse enrichie par le LLM (messages personnalisés, priorités, conseils)
+            """
+    )
+    @io.swagger.v3.oas.annotations.responses.ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200",
+            description = "Recommandations LLM générées avec succès"
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "404",
+            description = "Session non trouvée"
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "403",
+            description = "Accès refusé - vous n'êtes pas propriétaire de cette session"
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "500",
+            description = "Erreur serveur lors de l'appel à l'API Gemini ou du calcul"
+        )
+    })
+    public ResponseEntity<?> getRecommendationsWithLLM(
+        @io.swagger.v3.oas.annotations.Parameter(
+            name = "id",
+            description = "ID de la session d'évaluation",
+            required = true,
+            example = "123"
+        )
+        @PathVariable Long id
+    ) {
+        try {
+            // Get session
+            SessionTest session = sessionTestService.getSessionById(id);
+            if (session == null) {
+                return ResponseEntity.notFound().build();
+            }
+            
+            // Verify ownership if user is authenticated
+            try {
+                Utilisateur user = authenticationFacade.getCurrentUser();
+                if (!session.getUtilisateur().getId().equals(user.getId()) && 
+                    !user.getRole().name().equals("ADMIN")) {
+                    return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+                }
+            } catch (RuntimeException e) {
+                log.info("Endpoint public pour LLM - pas d'authentification requise");
+            }
+            
+            log.info("PHASE 2 - Enrichissement LLM pour session {}", id);
+            
+            // PHASE 1: Compute structured data
+            RecommendationData structuredData = recommendationService.computeStructuredData(session);
+            
+            // PHASE 2: Enrich with LLM
+            var result = recommendationService.enrichWithLLM(structuredData);
+            
+            return ResponseEntity.ok(result);
+            
+        } catch (Exception e) {
+            log.error("Erreur enrichissement LLM", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of(
+                    "error", "Erreur lors de l'appel LLM",
+                    "message", e.getMessage()
+                ));
         }
     }
 

@@ -42,6 +42,8 @@ public class RecommendationService {
     private final SessionTestRepository sessionRepository;
     private final ModuleFIERepository moduleFIERepository;
     private final CompetenceRepository competenceRepository;
+    private final GeminiClient geminiClient;
+    private final PromptBuilder promptBuilder;
     
     /**
      * Compute la RecommendationData complète pour une session
@@ -300,4 +302,45 @@ public class RecommendationService {
             .limit(5)  // Top 5 critical gaps
             .collect(Collectors.toList());
     }
+
+    // ══════════════════════════════════════════════════════════════════════════════════
+    //  PHASE 2: ENRICHISSEMENT AVEC LLM GEMINI
+    // ══════════════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Enrichit les données structurées (PHASE 1) avec l'analyse LLM (PHASE 2)
+     * 
+     * Étapes:
+     * 1. Prend RecommendationData calculées par algo manuel
+     * 2. Les convertit en prompt naturel (PromptBuilder)
+     * 3. Appelle l'API Gemini (GeminiClient)
+     * 4. Récupère AnalyseLLM enrichie avec textes personnalisés
+     *
+     * @param data Les données structurées de la PHASE 1
+     * @return AnalyseLLM avec analyse enrichie par le LLM
+     */
+    public AnalyseLLM.AnalyseLLMWithData enrichWithLLM(RecommendationData data) {
+        log.info("PHASE 2 - Enrichissement avec LLM...");
+        
+        try {
+            // 1. Construire le prompt
+            String prompt = promptBuilder.build(data);
+            
+            // 2. Appeler Gemini
+            AnalyseLLM analyseLLM = geminiClient.analyser(prompt);
+            
+            log.info("Analyse LLM reçue avec succès");
+            
+            // 3. Retourner l'analyse enrichie avec les données de base
+            return AnalyseLLM.AnalyseLLMWithData.builder()
+                .phaseStructuree(data)
+                .analyseLLM(analyseLLM)
+                .build();
+                
+        } catch (Exception e) {
+            log.error("Erreur lors de l'enrichissement LLM", e);
+            throw new RuntimeException("Erreur enrichissement LLM : " + e.getMessage(), e);
+        }
+    }
 }
+
