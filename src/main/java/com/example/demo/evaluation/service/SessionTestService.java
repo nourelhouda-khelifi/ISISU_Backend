@@ -7,6 +7,7 @@ import com.example.demo.evaluation.repository.*;
 import com.example.demo.referentiel.infrastructure.ModuleFIERepository;
 import com.example.demo.questions.domain.Choix;
 import com.example.demo.questions.domain.Question;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -38,6 +39,7 @@ public class SessionTestService {
     private final QuestionSessionRepository questionSessionRepository;
     private final ReponseEtudiantRepository reponseRepository;
     private final ScoreCompetenceRepository scoreRepository;
+    private final EntityManager entityManager;
     @SuppressWarnings("unused")
     private final ModuleFIERepository moduleFieRepository;
     
@@ -134,16 +136,20 @@ public class SessionTestService {
         response.setDateReponse(LocalDateTime.now());
         reponseRepository.save(response);
         
-        // 3. MAJ QuestionSession
+        // 4. MAJ QuestionSession
         questionSession.setEstRepondue(true);
         questionSession.setEstCorrecte(response.getEstCorrecte());
         questionSessionRepository.save(questionSession);
         
-        // 4. Algorithme adaptatif: déterminer prochaine question
+        // 5. FLUSH pour s'assurer que les changes sont persistées
+        entityManager.flush();
+        
+        // 6. Algorithme adaptatif: déterminer prochaine question
+        //    (peut dynamiquement ajouter CONFIRMATION questions)
         QuestionSession nextQuestion = algorithmService
             .analyzeResponseAndGetNextQuestion(session, questionSession, response);
         
-        // 5. Si plus de questions: terminer session
+        // 7. Si plus de questions: terminer session
         if (nextQuestion == null) {
             log.info("Plus de questions pour session {}", session.getId());
             terminateSession(session, StatutSession.TERMINEE, null);
@@ -152,6 +158,9 @@ public class SessionTestService {
     
     /**
      * ÉTAPE 5: Terminer la session et calculer scores
+     * 
+     * ✅ FIX C2: Calculer scores pour TOUS statuts terminaux (TERMINEE, TIMEOUT, ABANDONNEE)
+     * (Pédagogiquement: même si session timeout, on doit évaluer la progression)
      */
     public void terminateSession(
         SessionTest session,
@@ -172,15 +181,19 @@ public class SessionTestService {
         }
         sessionRepository.save(session);
         
-        // 2. Calculer tous les scores
-        if (statut == StatutSession.TERMINEE) {
+        // 2. Calculer tous les scores pour TOUS statuts terminaux
+        // ✅ C2: Pas seulement TERMINEE, mais aussi TIMEOUT et ABANDONNEE
+        // Logique pédagogique: évaluer la progression même si timeout
+        if (statut != StatutSession.EN_COURS) {
+            log.debug("Calculant scores pour session {} (statut={})", session.getId(), statut);
             List<ScoreCompetence> scores = scoringService.calculateAllScores(session);
             scores.forEach(s -> {
                 s.calculerEvolution();
                 scoreRepository.save(s);
             });
             
-            log.info("Session {}: {} scores calculés", session.getId(), scores.size());
+            log.info("Session {}: {} scores calculés (statut={})", 
+                session.getId(), scores.size(), statut);
         }
     }
     

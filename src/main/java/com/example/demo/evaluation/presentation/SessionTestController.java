@@ -32,7 +32,7 @@ import java.util.Map;
 @Slf4j
 @Tag(name = "Évaluation", description = "API REST pour l'évaluation adaptative")
 @SecurityRequirement(name = "Bearer Authentication")
-@PreAuthorize("hasAnyRole('ETUDIANT', 'FORMATEUR', 'ADMIN')")
+@PreAuthorize("hasAnyRole('ETUDIANT', 'CANDIDAT_VAE', 'FORMATEUR', 'ADMIN')")
 public class SessionTestController {
 
     private final SessionTestService sessionTestService;
@@ -190,6 +190,9 @@ public class SessionTestController {
             
             // Soumettre
             sessionTestService.submitAnswer(session, qs, response);
+            
+            // RE-FETCH session pour avoir l'état à jour (questions dynamically added)
+            session = sessionTestService.getCurrentSession(user).orElse(session);
             
             // Récupérer la prochaine question
             var nextQOpt = sessionTestService.getNextQuestion(session);

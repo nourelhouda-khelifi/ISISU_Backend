@@ -1,0 +1,530 @@
+{
+  "analyses": {
+    "AlgorithmeAdaptatifService": {
+      "package": "com.example.demo.evaluation.service",
+      "public_methods": [
+        {
+          "method": "analyzeResponseAndGetNextQuestion",
+          "returnType": "QuestionSession",
+          "parameters": [
+            {
+              "type": "SessionTest",
+              "name": "session"
+            },
+            {
+              "type": "QuestionSession",
+              "name": "currentQuestion"
+            },
+            {
+              "type": "ReponseEtudiant",
+              "name": "response"
+            }
+          ],
+          "description": "Analyser la réponse à la question courante et déterminer la prochaine question"
+        },
+        {
+          "method": "countDetectedLacunes",
+          "returnType": "int",
+          "parameters": [
+            {
+              "type": "SessionTest",
+              "name": "session"
+            }
+          ],
+          "description": "Compter les lacunes détectées pour la session"
+        },
+        {
+          "method": "countCompletedCompetences",
+          "returnType": "int",
+          "parameters": [
+            {
+              "type": "SessionTest",
+              "name": "session"
+            }
+          ],
+          "description": "Compter les compétences complètement évaluées"
+        }
+      ]
+    },
+    "SessionTestService": {
+      "package": "com.example.demo.evaluation.service",
+      "public_methods": [
+        {
+          "method": "createNewSession",
+          "returnType": "SessionTest",
+          "parameters": [
+            {
+              "type": "Utilisateur",
+              "name": "utilisateur"
+            }
+          ],
+          "description": "Créer nouvelle session pour un étudiant (ÉTAPE 1)"
+        },
+        {
+          "method": "getCurrentSession",
+          "returnType": "Optional<SessionTest>",
+          "parameters": [
+            {
+              "type": "Utilisateur",
+              "name": "utilisateur"
+            }
+          ],
+          "description": "Récupérer la session courante d'un étudiant avec vérification timeout (ÉTAPE 2)"
+        },
+        {
+          "method": "getNextQuestion",
+          "returnType": "Optional<QuestionSession>",
+          "parameters": [
+            {
+              "type": "SessionTest",
+              "name": "session"
+            }
+          ],
+          "description": "Récupérer la prochaine question non répondue (ÉTAPE 3)"
+        },
+        {
+          "method": "submitAnswer",
+          "returnType": "void",
+          "parameters": [
+            {
+              "type": "SessionTest",
+              "name": "session"
+            },
+            {
+              "type": "QuestionSession",
+              "name": "questionSession"
+            },
+            {
+              "type": "ReponseEtudiant",
+              "name": "response"
+            }
+          ],
+          "description": "Traiter réponse d'étudiant avec validation et algorithme adaptatif (ÉTAPE 4)"
+        },
+        {
+          "method": "terminateSession",
+          "returnType": "void",
+          "parameters": [
+            {
+              "type": "SessionTest",
+              "name": "session"
+            },
+            {
+              "type": "StatutSession",
+              "name": "statut"
+            },
+            {
+              "type": "String",
+              "name": "raison"
+            }
+          ],
+          "description": "Terminer la session et calculer scores pour tous statuts terminaux (ÉTAPE 5)"
+        },
+        {
+          "method": "getSessionSummary",
+          "returnType": "Map<String, Object>",
+          "parameters": [
+            {
+              "type": "SessionTest",
+              "name": "session"
+            }
+          ],
+          "description": "Récupérer historique d'une session"
+        },
+        {
+          "method": "getSessionResults",
+          "returnType": "List<ScoreCompetence>",
+          "parameters": [
+            {
+              "type": "SessionTest",
+              "name": "session"
+            }
+          ],
+          "description": "Récupérer résultats finals"
+        },
+        {
+          "method": "abandonSession",
+          "returnType": "void",
+          "parameters": [
+            {
+              "type": "SessionTest",
+              "name": "session"
+            }
+          ],
+          "description": "Abandonner une session"
+        },
+        {
+          "method": "getUserSessions",
+          "returnType": "List<SessionTest>",
+          "parameters": [
+            {
+              "type": "Utilisateur",
+              "name": "utilisateur"
+            }
+          ],
+          "description": "Récupérer historique de l'étudiant"
+        },
+        {
+          "method": "hasActiveSession",
+          "returnType": "boolean",
+          "parameters": [
+            {
+              "type": "Utilisateur",
+              "name": "utilisateur"
+            }
+          ],
+          "description": "Vérifier s'il y a une session en cours"
+        },
+        {
+          "method": "getSessionById",
+          "returnType": "SessionTest",
+          "parameters": [
+            {
+              "type": "Long",
+              "name": "sessionId"
+            }
+          ],
+          "description": "Récupérer une session par son ID"
+        }
+      ]
+    },
+    "ScoringService": {
+      "package": "com.example.demo.evaluation.service",
+      "public_methods": [
+        {
+          "method": "calculateAllScores",
+          "returnType": "List<ScoreCompetence>",
+          "parameters": [
+            {
+              "type": "SessionTest",
+              "name": "session"
+            }
+          ],
+          "description": "Calculer tous les scores pour une session terminée (non sauvegardés)"
+        }
+      ]
+    },
+    "QuestionSession": {
+      "package": "com.example.demo.evaluation.domain",
+      "annotations": [
+        "@Entity",
+        "@Table(name = \"question_session\")",
+        "@Getter",
+        "@Setter",
+        "@NoArgsConstructor",
+        "@AllArgsConstructor",
+        "@Builder"
+      ],
+      "fields_with_accessors": [
+        {
+          "fieldName": "id",
+          "type": "Long",
+          "annotations": [
+            "@Id",
+            "@GeneratedValue(strategy = GenerationType.IDENTITY)"
+          ],
+          "getter": "getId()",
+          "setter": "setId(Long id)",
+          "description": "PK auto-générée"
+        },
+        {
+          "fieldName": "session",
+          "type": "SessionTest",
+          "annotations": [
+            "@ManyToOne(fetch = FetchType.LAZY)",
+            "@JoinColumn(name = \"session_id\", nullable = false)"
+          ],
+          "getter": "getSession()",
+          "setter": "setSession(SessionTest session)",
+          "description": "Session à laquelle appartient cette question"
+        },
+        {
+          "fieldName": "question",
+          "type": "Question",
+          "annotations": [
+            "@ManyToOne(fetch = FetchType.LAZY)",
+            "@JoinColumn(name = \"question_id\", nullable = false)"
+          ],
+          "getter": "getQuestion()",
+          "setter": "setQuestion(Question question)",
+          "description": "La question elle-même"
+        },
+        {
+          "fieldName": "ordre",
+          "type": "Integer",
+          "annotations": [
+            "@Column(nullable = false)"
+          ],
+          "getter": "getOrdre()",
+          "setter": "setOrdre(Integer ordre)",
+          "description": "Ordre d'apparition dans la session"
+        },
+        {
+          "fieldName": "type",
+          "type": "TypeQSession",
+          "annotations": [
+            "@Enumerated(EnumType.STRING)",
+            "@Column(nullable = false)"
+          ],
+          "defaultValue": "TypeQSession.NORMALE",
+          "getter": "getType()",
+          "setter": "setType(TypeQSession type)",
+          "description": "Type: NORMALE ou CONFIRMATION",
+          "possibleValues": ["NORMALE", "CONFIRMATION"]
+        },
+        {
+          "fieldName": "estRepondue",
+          "type": "Boolean",
+          "annotations": [
+            "@Column(nullable = false, name = \"est_repondue\")"
+          ],
+          "defaultValue": "false",
+          "getter": "getEstRepondue()",
+          "setter": "setEstRepondue(Boolean estRepondue)",
+          "description": "Flag: a-t-elle reçu une réponse?"
+        },
+        {
+          "fieldName": "estCorrecte",
+          "type": "Boolean",
+          "annotations": [
+            "@Column(name = \"est_correcte\")"
+          ],
+          "getter": "getEstCorrecte()",
+          "setter": "setEstCorrecte(Boolean estCorrecte)",
+          "description": "Flag: la réponse est-elle correcte? (null si pas encore répondue)"
+        },
+        {
+          "fieldName": "confirmationFailed",
+          "type": "Boolean",
+          "annotations": [
+            "@Column(nullable = false, name = \"confirmation_failed\")"
+          ],
+          "defaultValue": "false",
+          "getter": "getConfirmationFailed()",
+          "setter": "setConfirmationFailed(Boolean confirmationFailed)",
+          "description": "Flag: a-t-elle été une confirmation qui a échoué?"
+        }
+      ]
+    },
+    "SessionTest": {
+      "package": "com.example.demo.evaluation.domain",
+      "annotations": [
+        "@Entity",
+        "@Table(name = \"session_test\")",
+        "@Getter",
+        "@Setter",
+        "@NoArgsConstructor",
+        "@AllArgsConstructor",
+        "@Builder"
+      ],
+      "fields_with_accessors": [
+        {
+          "fieldName": "id",
+          "type": "Long",
+          "annotations": [
+            "@Id",
+            "@GeneratedValue(strategy = GenerationType.IDENTITY)"
+          ],
+          "getter": "getId()",
+          "setter": "setId(Long id)",
+          "description": "PK auto-générée"
+        },
+        {
+          "fieldName": "utilisateur",
+          "type": "Utilisateur",
+          "annotations": [
+            "@ManyToOne(fetch = FetchType.LAZY)",
+            "@JoinColumn(name = \"utilisateur_id\", nullable = false)"
+          ],
+          "getter": "getUtilisateur()",
+          "setter": "setUtilisateur(Utilisateur utilisateur)",
+          "description": "L'étudiant qui passe le test"
+        },
+        {
+          "fieldName": "dateDebut",
+          "type": "LocalDateTime",
+          "annotations": [
+            "@Column(nullable = false)"
+          ],
+          "getter": "getDateDebut()",
+          "setter": "setDateDebut(LocalDateTime dateDebut)",
+          "description": "Date/heure de démarrage du test"
+        },
+        {
+          "fieldName": "dateFin",
+          "type": "LocalDateTime",
+          "annotations": [
+            "@Column(name = \"date_fin\")"
+          ],
+          "getter": "getDateFin()",
+          "setter": "setDateFin(LocalDateTime dateFin)",
+          "description": "Date/heure de fin (null si encore en cours)"
+        },
+        {
+          "fieldName": "statut",
+          "type": "StatutSession",
+          "annotations": [
+            "@Enumerated(EnumType.STRING)",
+            "@Column(nullable = false)"
+          ],
+          "defaultValue": "StatutSession.EN_COURS",
+          "getter": "getStatut()",
+          "setter": "setStatut(StatutSession statut)",
+          "description": "Statut de la session",
+          "possibleValues": ["EN_COURS", "TERMINEE", "ABANDONNEE", "TIMEOUT"]
+        },
+        {
+          "fieldName": "dureeMaxSecondes",
+          "type": "Integer",
+          "annotations": [
+            "@Column(nullable = false)"
+          ],
+          "defaultValue": "7200",
+          "getter": "getDureeMaxSecondes()",
+          "setter": "setDureeMaxSecondes(Integer dureeMaxSecondes)",
+          "description": "Durée max en secondes (2h = 7200s)"
+        },
+        {
+          "fieldName": "numeroSession",
+          "type": "Integer",
+          "annotations": [
+            "@Column(nullable = false)"
+          ],
+          "defaultValue": "1",
+          "getter": "getNumeroSession()",
+          "setter": "setNumeroSession(Integer numeroSession)",
+          "description": "Numéro de session pour cet étudiant (1ère, 2ème, 3ème tentative)"
+        },
+        {
+          "fieldName": "ordreModulesJSON",
+          "type": "String",
+          "annotations": [
+            "@Column(columnDefinition = \"TEXT\", name = \"ordre_modules_json\")"
+          ],
+          "getter": "getOrdreModulesJSON()",
+          "setter": "setOrdreModulesJSON(String ordreModulesJSON)",
+          "description": "Ordre des 11 modules calculé au démarrage (JSON pour traçabilité)"
+        },
+        {
+          "fieldName": "raison",
+          "type": "String",
+          "annotations": [
+            "@Column(length = 100)"
+          ],
+          "getter": "getRaison()",
+          "setter": "setRaison(String raison)",
+          "description": "Raison de fermeture si applicable: 'timeout', 'utilisateur', 'inactivite'"
+        },
+        {
+          "fieldName": "dateAbandon",
+          "type": "LocalDateTime",
+          "annotations": [
+            "@Column(name = \"date_abandon\")"
+          ],
+          "getter": "getDateAbandon()",
+          "setter": "setDateAbandon(LocalDateTime dateAbandon)",
+          "description": "Date d'abandon si applicable"
+        },
+        {
+          "fieldName": "questionSessions",
+          "type": "List<QuestionSession>",
+          "annotations": [
+            "@OneToMany(mappedBy = \"session\", cascade = CascadeType.ALL, orphanRemoval = true)",
+            "@Builder.Default"
+          ],
+          "defaultValue": "new ArrayList<>()",
+          "getter": "getQuestionSessions()",
+          "setter": "setQuestionSessions(List<QuestionSession> questionSessions)",
+          "description": "Questions pré-sélectionnées pour cette session"
+        },
+        {
+          "fieldName": "reponses",
+          "type": "List<ReponseEtudiant>",
+          "annotations": [
+            "@OneToMany(mappedBy = \"session\", cascade = CascadeType.ALL, orphanRemoval = true)",
+            "@Builder.Default"
+          ],
+          "defaultValue": "new ArrayList<>()",
+          "getter": "getReponses()",
+          "setter": "setReponses(List<ReponseEtudiant> reponses)",
+          "description": "Réponses de l'étudiant aux questions"
+        },
+        {
+          "fieldName": "scores",
+          "type": "List<ScoreCompetence>",
+          "annotations": [
+            "@OneToMany(mappedBy = \"session\", cascade = CascadeType.ALL, orphanRemoval = true)",
+            "@Builder.Default"
+          ],
+          "defaultValue": "new ArrayList<>()",
+          "getter": "getScores()",
+          "setter": "setScores(List<ScoreCompetence> scores)",
+          "description": "Scores finaux par compétence"
+        }
+      ],
+      "custom_methods": [
+        {
+          "method": "getTempsEcoulesSecondes",
+          "returnType": "Integer",
+          "parameters": [],
+          "description": "Calculer le temps écoulé en secondes"
+        },
+        {
+          "method": "getTempsRestantSecondes",
+          "returnType": "Integer",
+          "parameters": [],
+          "description": "Calculer le temps restant en secondes"
+        },
+        {
+          "method": "isTimerExpire",
+          "returnType": "boolean",
+          "parameters": [],
+          "description": "Vérifier si le timer a expiré"
+        }
+      ]
+    }
+  },
+  "types_and_enums": {
+    "StatutSession": {
+      "package": "com.example.demo.evaluation.domain.enums",
+      "values": ["EN_COURS", "TERMINEE", "ABANDONNEE", "TIMEOUT"]
+    },
+    "TypeQSession": {
+      "package": "com.example.demo.evaluation.domain.enums",
+      "values": ["NORMALE", "CONFIRMATION"]
+    },
+    "NiveauAtteint": {
+      "package": "com.example.demo.evaluation.domain.enums",
+      "values": ["NON_DEMARRE", "FACILE", "MOYEN", "DIFFICILE"]
+    },
+    "StatutCompetence": {
+      "package": "com.example.demo.evaluation.domain.enums",
+      "values": ["LACUNE", "A_RENFORCER", "ACQUIS", "MAITRISE"]
+    },
+    "NiveauDifficulte": {
+      "package": "com.example.demo.questions.domain.enums",
+      "values": ["FACILE", "MOYEN", "DIFFICILE"]
+    }
+  },
+  "key_relationships": {
+    "SessionTest": {
+      "questionSessions": "One-to-Many relation - questions pré-sélectionnées pour une session (~400 questions)",
+      "reponses": "One-to-Many relation - réponses de l'étudiant",
+      "scores": "One-to-Many relation - scores finaux par compétence",
+      "utilisateur": "Many-to-One relation - l'étudiant"
+    },
+    "QuestionSession": {
+      "session": "Many-to-One relation - appartient à une SessionTest",
+      "question": "Many-to-One relation - référence la Question"
+    }
+  },
+  "important_notes": [
+    "Toutes les classes utilisent Lombok (@Getter, @Setter, @Builder, etc.) - les getters/setters sont auto-générés",
+    "SessionTestService est le service orchestrateur central du lifecycle",
+    "AlgorithmeAdaptatifService gère la logique adaptative (FACILE → MOYEN → DIFFICILE)",
+    "ScoringService calcule les scores avec pondération (FACILE=1.0, MOYEN=1.5, DIFFICILE=2.0)",
+    "QuestionSession utilise des flags pour tracer : estRepondue, estCorrecte, confirmationFailed",
+    "SessionTest contient les métadonnées de la session (durée, statut, ordre modules, etc.)",
+    "Les annotations @Column, @JoinColumn, @Enumerated définissent les détails du mapping ORM"
+  ]
+}

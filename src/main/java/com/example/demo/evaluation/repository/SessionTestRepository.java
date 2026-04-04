@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -45,4 +46,18 @@ public interface SessionTestRepository extends JpaRepository<SessionTest, Long> 
      * Compter le nombre total de sessions pour un utilisateur
      */
     long countByUtilisateur(Utilisateur utilisateur);
+    
+    /**
+     * Compter le nombre de sessions par statut
+     */
+    long countByStatut(StatutSession statut);
+    
+    /**
+     * ✅ FIX M2: Trouver les sessions expirées (EN_COURS depuis 3+ heures)
+     * Pour SessionCleanupScheduler → fermer et calculer scores
+     */
+    List<SessionTest> findByStatutAndDateDebutBefore(
+        StatutSession statut,
+        LocalDateTime dateDebutBefore
+    );
 }

@@ -40,6 +40,8 @@ public class AlgorithmeAdaptatifService {
     /**
      * Analyser la réponse à la question courante et déterminer la prochaine
      * 
+     * ✅ FIX M4: Traiter TOUTES les compétences (pas seulement la première)
+     * 
      * Retourne:
      * - La prochaine QuestionSession à proposer
      * - OU null si session terminée
@@ -49,23 +51,42 @@ public class AlgorithmeAdaptatifService {
         QuestionSession currentQuestion,
         ReponseEtudiant response
     ) {
-        Competence competence = currentQuestion.getQuestion()
-            .getCompetences().stream().findFirst().orElse(null);
+        List<Competence> competences = currentQuestion.getQuestion()
+            .getCompetences();
         
-        if (competence == null) {
+        if (competences == null || competences.isEmpty()) {
             log.warn("Question sans compétence: {}", currentQuestion.getId());
             return getNextQuestionByOrder(session, currentQuestion.getOrdre());
         }
         
         NiveauDifficulte currentLevel = currentQuestion.getQuestion().getDifficulte();
         
-        // LOGIQUE ADAPTATIVE
+        // ✅ M4: Traiter TOUTES les compétences associées à cette question
+        // Logique pédagogique: Si question couvre 3 compétences, toutes 3 évoluent
+        for (Competence competence : competences) {
+            try {
+                if (response.getEstCorrecte()) {
+                    // ✅ L'étudiant a réussi pour cette compétence
+                    handleSuccessfulResponse(session, currentQuestion, competence, currentLevel);
+                } else {
+                    // ❌ L'étudiant a échoué pour cette compétence
+                    handleFailedResponse(session, currentQuestion, competence, currentLevel);
+                }
+                log.debug("Progression enregistrée pour compétence: {} (question: {})", 
+                    competence.getIntitule(), currentQuestion.getId());
+            } catch (Exception e) {
+                log.warn("Erreur traitement compétence {} pour question {}: {}", 
+                    competence.getId(), currentQuestion.getId(), e.getMessage());
+                // Continuer avec les autres compétences même si une échoue
+            }
+        }
+        
+        // Retourner la prochaine question (logique unchanged)
+        Competence mainCompetence = competences.get(0);
         if (response.getEstCorrecte()) {
-            // ✅ L'étudiant a réussi
-            return handleSuccessfulResponse(session, currentQuestion, competence, currentLevel);
+            return handleSuccessfulResponse(session, currentQuestion, mainCompetence, currentLevel);
         } else {
-            // ❌ L'étudiant a échoué
-            return handleFailedResponse(session, currentQuestion, competence, currentLevel);
+            return handleFailedResponse(session, currentQuestion, mainCompetence, currentLevel);
         }
     }
     
@@ -106,7 +127,9 @@ public class AlgorithmeAdaptatifService {
     /**
      * Gérer une réponse ÉCHOUÉE
      * 
-     * CORRECTION: Pas de downgrade après validation des bases
+     * ✅ FIX C3: Exception handling robuste pour confirmations
+     * 
+     * Logique pédagogique:
      * - FACILE échoué → proposer FACILE de confirmation
      * - Confirmation échouée → LACUNE confirmée, passer suivant
      * - MOYEN échoué → proposer MOYEN de confirmation (pas progression)
@@ -119,18 +142,19 @@ public class AlgorithmeAdaptatifService {
         NiveauDifficulte currentLevel
     ) {
         if (currentQuestion.getType() == TypeQSession.CONFIRMATION) {
-            // Confirmation échouée
-            log.debug("Confirmation ÉCHOUÉE pour {} → LACUNE confirmée", 
+            // Confirmation échouée → LACUNE confirmée
+            log.info("Confirmation ÉCHOUÉE pour {} → Lacune confirmée (pédagogiquement valide)", 
                 competence.getIntitule());
-            // Marquer qu'une confirmation a échoué
+            // Marquer qu'une confirmation a échoué (traçabilité pédagogique)
             currentQuestion.setConfirmationFailed(true);
             questionSessionRepository.save(currentQuestion);
-            // LACUNE confirmée, passer au suivant
+            // LACUNE confirmée pédagogiquement, passer au suivant
             return getNextUnansweredQuestion(session);
         }
         
         // Tous les niveaux échoués (FACILE, MOYEN, DIFFICILE) → Ajouter confirmation
-        log.debug("{} échoué pour {} → Demander confirmation au même niveau", 
+        // Pédagogie: "Un accident n'est pas une lacune" - proposer vérification
+        log.debug("{} échoué pour {} → Proposer verification (confirmation au même niveau)", 
             currentLevel, competence.getIntitule());
         
         int nextOrdre = (int) session.getQuestionSessions()
@@ -140,11 +164,34 @@ public class AlgorithmeAdaptatifService {
             .orElse(0) + 1;
         
         try {
+            // ✅ C3: Esssayer d'ajouter question confirmation
             QuestionSession confirmation = questionSelectionService
                 .addConfirmationQuestion(session, competence, currentLevel, nextOrdre);
+            
+            if (confirmation == null) {
+                log.warn("addConfirmationQuestion retourné null pour {} level {}", 
+                    competence.getIntitule(), currentLevel);
+                // Fallback: passer au suivant si confirmation impossible
+                return getNextUnansweredQuestion(session);
+            }
+            
+            log.debug("Question confirmation ajoutée: {} pour {} (niveau {})", 
+                confirmation.getId(), competence.getIntitule(), currentLevel);
             return confirmation;
+            
+        } catch (IllegalArgumentException e) {
+            // Pas de questions de confirmation disponibles
+            log.warn("Pas de questions confirmation disponibles pour {} level {}: {}. " +
+                    "Passer au suivant (fallback pédagogique).", 
+                competence.getIntitule(), currentLevel, e.getMessage());
+            // Fallback pédagogique: passer à la question suivante
+            return getNextUnansweredQuestion(session);
+            
         } catch (Exception e) {
-            log.warn("Impossible d'ajouter question confirmation: {}", e.getMessage());
+            // Autres erreurs (DB, etc)
+            log.error("Erreur critique lors de l'ajout de confirmation pour {} nivel {}: {}", 
+                competence.getIntitule(), currentLevel, e.getMessage(), e);
+            // Fallback final: passer au suivant (ne pas bloquer la session)
             return getNextUnansweredQuestion(session);
         }
     }

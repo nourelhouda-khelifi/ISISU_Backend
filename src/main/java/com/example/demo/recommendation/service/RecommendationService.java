@@ -129,11 +129,13 @@ public class RecommendationService {
                     ? totalScore / totalPonderation 
                     : 50.0;
                 
-                String status = mapScoreToStatus(moduleScore);
+                // NORMALIZE: Convert 0-1 range to 0-100
+                double normalizedScore = moduleScore * 100.0;
+                String status = mapScoreToStatus(normalizedScore);
                 
                 return ModuleScore.builder()
                     .module(module.getNom())
-                    .score((int) moduleScore)
+                    .score((int) normalizedScore)
                     .status(status)
                     .build();
             })
@@ -174,10 +176,13 @@ public class RecommendationService {
             SessionTest session = lastSessions.get(i);
             double globalScore = calculateGlobalScore(session);
             
+            // NORMALIZE: Convert 0-1 range to 0-100
+            int normalizedGlobalScore = (int) (globalScore * 100.0);
+            
             points.add(SessionProgressionPoint.builder()
                 .sessionNum(i + 1)
                 .date(session.getDateDebut())
-                .scoreGlobal((int) globalScore)
+                .scoreGlobal(normalizedGlobalScore)
                 .build());
         }
         
