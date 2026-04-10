@@ -1,0 +1,44 @@
+services:
+  - type: web
+    name: isisu-backend
+    runtime: java
+    plan: free
+    buildCommand: mvn clean package -X
+    startCommand: java -jar target/demo-0.0.1-SNAPSHOT.jar
+    envVars:
+      - key: PORT
+        value: ${PORT}
+      - key: DB_URL
+        value: ${DATABASE_URL}
+      - key: DB_USERNAME
+        value: ${DB_USERNAME}
+      - key: DB_PASSWORD
+        value: ${DB_PASSWORD}
+      - key: SERVER_PORT
+        value: ${PORT}
+      - key: SECURITY_USER_NAME
+        value: ${SECURITY_USER_NAME}
+      - key: SECURITY_USER_PASSWORD
+        value: ${SECURITY_USER_PASSWORD}
+      - key: JWT_SECRET
+        value: ${JWT_SECRET}
+      - key: JWT_ACCESS_TOKEN_TTL_SECONDS
+        value: ${JWT_ACCESS_TOKEN_TTL_SECONDS}
+      - key: JWT_ISSUER
+        value: ${JWT_ISSUER}
+      - key: SENDGRID_API_KEY
+        value: ${SENDGRID_API_KEY}
+      - key: SENDGRID_FROM_EMAIL
+        value: ${SENDGRID_FROM_EMAIL}
+      - key: GEMINI_API_KEY
+        value: ${GEMINI_API_KEY}
+      - key: GEMINI_MODEL
+        value: ${GEMINI_MODEL}
+      - key: GEMINI_URL
+        value: ${GEMINI_URL}
+
+databases:
+  - name: isisu-postgres
+    databaseName: isisu
+    user: isisuser
+    region: ohio # ou choisir votre région
