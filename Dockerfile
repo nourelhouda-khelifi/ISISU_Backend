@@ -12,8 +12,8 @@ COPY .mvn .mvn
 # Copier le code source
 COPY src src
 
-# Builder le projet
-RUN ./mvnw clean package -DskipTests
+# Donner les permissions d'exécution et builder le projet
+RUN chmod +x ./mvnw && ./mvnw clean package -DskipTests
 
 # Stage 2: Runtime
 FROM eclipse-temurin:21-jdk-alpine
