@@ -14,7 +14,7 @@ import com.example.demo.questions.domain.enums.NiveauDifficulte;
 import com.example.demo.questions.domain.enums.TypeQuestion;
 import com.example.demo.questions.repository.QuestionRepository;
 import com.example.demo.referentiel.domain.Competence;
-import com.example.demo.referentiel.repository.CompetenceRepository;
+import com.example.demo.referentiel.infrastructure.CompetenceRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -71,7 +71,7 @@ public class StatistiquesService {
                 
                 topCompetences.add(StatistiquesCompetencesDTO.TopCompetenceDTO.builder()
                         .id(competence.getId())
-                        .nom(competence.getNomCompetence())
+                        .nom(competence.getIntitule())
                         .scoreMoyen(Math.round(scoreMoyen * 100.0) / 100.0)
                         .nombreApprenants(nombreApprenants)
                         .tauxReussite(Math.round(tauxReussite * 100.0) / 100.0)
@@ -110,7 +110,7 @@ public class StatistiquesService {
             if (!semaines.isEmpty()) {
                 tendances.add(StatistiquesCompetencesDTO.CompetenceTendanceDTO.builder()
                         .id(competence.getId())
-                        .nom(competence.getNomCompetence())
+                        .nom(competence.getIntitule())
                         .semaines(semaines)
                         .build());
             }
@@ -321,7 +321,7 @@ public class StatistiquesService {
             
             if (!performance.isEmpty()) {
                 items.add(StatistiquesHeatmapDTO.HeatmapItemDTO.builder()
-                        .competence(competence.getNomCompetence())
+                        .competence(competence.getIntitule())
                         .competenceId(competence.getId())
                         .performanceParDifficulte(performance)
                         .build());

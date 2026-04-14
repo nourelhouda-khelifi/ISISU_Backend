@@ -2,6 +2,7 @@ package com.example.demo.evaluation.domain;
 
 import com.example.demo.auth.domain.Utilisateur;
 import com.example.demo.evaluation.domain.enums.StatutSession;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -91,6 +92,7 @@ public class SessionTest {
      * × 3 FACILE + 3 MOYEN + 3 DIFFICILE
      */
     @OneToMany(mappedBy = "session", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     @Builder.Default
     private List<QuestionSession> questionSessions = new ArrayList<>();
     
@@ -98,6 +100,7 @@ public class SessionTest {
      * Réponses de l'étudiant aux questions
      */
     @OneToMany(mappedBy = "session", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     @Builder.Default
     private List<ReponseEtudiant> reponses = new ArrayList<>();
     
@@ -105,6 +108,7 @@ public class SessionTest {
      * Scores finaux par compétence
      */
     @OneToMany(mappedBy = "session", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     @Builder.Default
     private List<ScoreCompetence> scores = new ArrayList<>();
     
