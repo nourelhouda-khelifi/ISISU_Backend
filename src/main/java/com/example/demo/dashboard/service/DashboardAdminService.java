@@ -55,6 +55,10 @@ public class DashboardAdminService {
         long sessionsTerminees = sessionTestRepository.countByStatut(StatutSession.TERMINEE);
         Double tauxReussite = totalSessions > 0 ? (double) sessionsTerminees / totalSessions : 0.0;
         
+        // Calculer les top compétences et lacunes
+        List<CompetenceStatsDTO> topCompetences = calculerTopCompetences();
+        List<CompetenceStatsDTO> competencesLacunes = calculerCompetencesLacunes();
+        
         return AdminDashboardDTO.builder()
                 .totalUtilisateurs(totalUsers)
                 .totalEtudiantsFIE3(totalFIE3)
@@ -62,8 +66,8 @@ public class DashboardAdminService {
                 .scoreMoyenGlobal(scoreMoyen)
                 .sessionsEnCours(sessionsEnCours)
                 .tauxReussite(tauxReussite)
-                .competencesTopPerformance(Collections.emptyList()) // À implémenter si besoin
-                .competencesLacunes(Collections.emptyList()) // À implémenter si besoin
+                .competencesTopPerformance(topCompetences)
+                .competencesLacunes(competencesLacunes)
                 .build();
     }
     
@@ -199,6 +203,99 @@ public class DashboardAdminService {
                 .scoresCompetences(scoresCompetences)
                 .raison(session.getRaison())
                 .build();
+    }
+    
+    /**
+     * Calculer les TOP 5 compétences avec les meilleures performances
+     */
+    private List<CompetenceStatsDTO> calculerTopCompetences() {
+        List<com.example.demo.evaluation.domain.ScoreCompetence> allScores = scoreCompetenceRepository.findAll();
+        
+        if (allScores.isEmpty()) return Collections.emptyList();
+        
+        return allScores.stream()
+                .collect(Collectors.groupingBy(
+                        score -> score.getCompetence(),
+                        Collectors.averagingDouble(score -> score.getScoreObtenu() != null ? score.getScoreObtenu() : 0.0)
+                ))
+                .entrySet().stream()
+                .sorted((a, b) -> Double.compare(b.getValue(), a.getValue()))
+                .limit(5)
+                .map(entry -> {
+                    long nbApprenants = allScores.stream()
+                            .filter(s -> s.getCompetence().getId().equals(entry.getKey().getId()))
+                            .map(s -> s.getSession().getUtilisateur().getId())
+                            .distinct()
+                            .count();
+                    
+                    long nbAcquis = allScores.stream()
+                            .filter(s -> s.getCompetence().getId().equals(entry.getKey().getId()))
+                            .filter(s -> s.getStatut() != null && "ACQUIS".equals(s.getStatut().toString()))
+                            .count();
+                    
+                    long nbAdaptes = allScores.stream()
+                            .filter(s -> s.getCompetence().getId().equals(entry.getKey().getId()))
+                            .count();
+                    
+                    Double tauxAcquisition = nbAdaptes > 0 ? (double) (nbAcquis * 100 / nbAdaptes) : 0.0;
+                    
+                    return CompetenceStatsDTO.builder()
+                            .id(entry.getKey().getId())
+                            .nom(entry.getKey().getIntitule())
+                            .scoreMoyen(Math.round(entry.getValue() * 100.0) / 100.0)
+                            .nombreApprenants(nbApprenants)
+                            .tauxAcquisition(tauxAcquisition)
+                            .evolution("↗")
+                            .build();
+                })
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * Calculer les compétences avec LACUNES (scores faibles)
+     */
+    private List<CompetenceStatsDTO> calculerCompetencesLacunes() {
+        List<com.example.demo.evaluation.domain.ScoreCompetence> allScores = scoreCompetenceRepository.findAll();
+        
+        if (allScores.isEmpty()) return Collections.emptyList();
+        
+        return allScores.stream()
+                .collect(Collectors.groupingBy(
+                        score -> score.getCompetence(),
+                        Collectors.averagingDouble(score -> score.getScoreObtenu() != null ? score.getScoreObtenu() : 0.0)
+                ))
+                .entrySet().stream()
+                .filter(entry -> entry.getValue() < 50.0) // Seuil: moins de 50%
+                .sorted((a, b) -> Double.compare(a.getValue(), b.getValue()))
+                .limit(5)
+                .map(entry -> {
+                    long nbApprenants = allScores.stream()
+                            .filter(s -> s.getCompetence().getId().equals(entry.getKey().getId()))
+                            .map(s -> s.getSession().getUtilisateur().getId())
+                            .distinct()
+                            .count();
+                    
+                    long nbAcquis = allScores.stream()
+                            .filter(s -> s.getCompetence().getId().equals(entry.getKey().getId()))
+                            .filter(s -> s.getStatut() != null && "ACQUIS".equals(s.getStatut().toString()))
+                            .count();
+                    
+                    long nbAdaptes = allScores.stream()
+                            .filter(s -> s.getCompetence().getId().equals(entry.getKey().getId()))
+                            .count();
+                    
+                    Double tauxAcquisition = nbAdaptes > 0 ? (double) (nbAcquis * 100 / nbAdaptes) : 0.0;
+                    
+                    return CompetenceStatsDTO.builder()
+                            .id(entry.getKey().getId())
+                            .nom(entry.getKey().getIntitule())
+                            .scoreMoyen(Math.round(entry.getValue() * 100.0) / 100.0)
+                            .nombreApprenants(nbApprenants)
+                            .tauxAcquisition(tauxAcquisition)
+                            .evolution("↘")
+                            .build();
+                })
+                .collect(Collectors.toList());
     }
     
     // ============ Méthodes utilitaires ============
