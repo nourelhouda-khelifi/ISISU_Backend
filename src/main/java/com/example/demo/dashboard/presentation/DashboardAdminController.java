@@ -5,6 +5,7 @@ import com.example.demo.auth.domain.enums.StatutCompte;
 import com.example.demo.common.response.ApiResponse;
 import com.example.demo.dashboard.dto.*;
 import com.example.demo.dashboard.service.DashboardAdminService;
+import com.example.demo.dashboard.service.StatistiquesService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -29,6 +30,7 @@ import java.util.List;
 public class DashboardAdminController {
     
     private final DashboardAdminService dashboardAdminService;
+    private final StatistiquesService statistiquesService;
     
     /**
      * GET /api/v1/dashboard/admin
@@ -66,5 +68,66 @@ public class DashboardAdminController {
         log.debug("GET /statistiques/sessions");
         SessionStatisticsDTO stats = dashboardAdminService.getSessionStatistics();
         return ResponseEntity.ok(ApiResponse.success(200, "Statistiques récupérées", stats));
+    }
+    
+    /**
+     * GET /api/v1/dashboard/admin/statistiques/competences
+     * Récupérer les statistiques des compétences
+     */
+    @GetMapping("/statistiques/competences")
+    @Operation(summary = "Statistiques des compétences (top et tendances)")
+    public ResponseEntity<ApiResponse<StatistiquesCompetencesDTO>> getStatistiquesCompetences() {
+        log.debug("GET /statistiques/competences");
+        StatistiquesCompetencesDTO stats = statistiquesService.getStatistiquesCompetences();
+        return ResponseEntity.ok(ApiResponse.success(200, "Statistiques des compétences récupérées", stats));
+    }
+    
+    /**
+     * GET /api/v1/dashboard/admin/statistiques/questions
+     * Récupérer les statistiques des questions par type et difficulté
+     */
+    @GetMapping("/statistiques/questions")
+    @Operation(summary = "Statistiques des questions (par type et difficulté)")
+    public ResponseEntity<ApiResponse<StatistiquesQuestionsDTO>> getStatistiquesQuestions() {
+        log.debug("GET /statistiques/questions");
+        StatistiquesQuestionsDTO stats = statistiquesService.getStatistiquesQuestions();
+        return ResponseEntity.ok(ApiResponse.success(200, "Statistiques des questions récupérées", stats));
+    }
+    
+    /**
+     * GET /api/v1/dashboard/admin/statistiques/performances
+     * Récupérer les statistiques de performance des apprenants
+     */
+    @GetMapping("/statistiques/performances")
+    @Operation(summary = "Statistiques des performances (distribution scores et par type d'apprenant)")
+    public ResponseEntity<ApiResponse<StatistiquesPerformancesDTO>> getStatistiquesPerformances() {
+        log.debug("GET /statistiques/performances");
+        StatistiquesPerformancesDTO stats = statistiquesService.getStatistiquesPerformances();
+        return ResponseEntity.ok(ApiResponse.success(200, "Statistiques des performances récupérées", stats));
+    }
+    
+    /**
+     * GET /api/v1/dashboard/admin/statistiques/activite
+     * Récupérer les statistiques d'activité sur une période donnée
+     */
+    @GetMapping("/statistiques/activite")
+    @Operation(summary = "Statistiques d'activité (sessions et apprenants actifs)")
+    public ResponseEntity<ApiResponse<StatistiquesActiviteDTO>> getStatistiquesActivite(
+            @RequestParam(defaultValue = "7j") String periode) {
+        log.debug("GET /statistiques/activite - période: {}", periode);
+        StatistiquesActiviteDTO stats = statistiquesService.getStatistiquesActivite(periode);
+        return ResponseEntity.ok(ApiResponse.success(200, "Statistiques d'activité récupérées", stats));
+    }
+    
+    /**
+     * GET /api/v1/dashboard/admin/statistiques/heatmap
+     * Récupérer la heatmap des compétences par difficulté
+     */
+    @GetMapping("/statistiques/heatmap")
+    @Operation(summary = "Heatmap des compétences par niveau de difficulté")
+    public ResponseEntity<ApiResponse<StatistiquesHeatmapDTO>> getStatistiquesHeatmap() {
+        log.debug("GET /statistiques/heatmap");
+        StatistiquesHeatmapDTO stats = statistiquesService.getStatistiquesHeatmap();
+        return ResponseEntity.ok(ApiResponse.success(200, "Heatmap des statistiques récupérée", stats));
     }
 }
