@@ -22,6 +22,9 @@ public class GeminiClient {
     @Value("${GEMINI_MODEL:gemini-2.5-flash}")
     private String model;
     
+    @Value("${GOOGLE_API_KEY:${GEMINI_API_KEY:}}")
+    private String apiKey;
+    
     private final ObjectMapper objectMapper = new ObjectMapper();
     private Client client;
 
@@ -32,6 +35,13 @@ public class GeminiClient {
         if (client == null) {
             try {
                 log.info("Initialisation du Gemini Client...");
+                
+                // Définir la variable d'environnement pour le SDK Gemini
+                if (apiKey != null && !apiKey.isEmpty()) {
+                    System.setProperty("GOOGLE_API_KEY", apiKey);
+                    System.setenv("GOOGLE_API_KEY", apiKey);
+                }
+                
                 this.client = new Client();
                 log.info("Gemini Client initialisé avec succès");
             } catch (Exception e) {
