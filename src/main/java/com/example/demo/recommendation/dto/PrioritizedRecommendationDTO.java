@@ -15,6 +15,8 @@ public class PrioritizedRecommendationDTO {
     private String priority; // P1-CRITICAL, P2-HIGH, P3-MEDIUM, P4-OPTIONAL
     private String competence;
     private String moduleName;
+    private Long moduleId;
+    private String moduleCode;
     private String status; // MOMENTUM, STAGNATION, etc.
     private Double currentScore;
     private String trend;

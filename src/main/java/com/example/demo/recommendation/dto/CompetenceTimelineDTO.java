@@ -15,6 +15,8 @@ import java.util.List;
 public class CompetenceTimelineDTO {
     private String competenceName;
     private String moduleName;
+    private Long moduleId;
+    private String moduleCode;
     private List<SessionScorePointDTO> scores;
     private String trend; // MOMENTUM, PROGRESSION, STAGNATION, REGRESSION, NOT_ATTEMPTED
     private Double velocity; // Points per session
