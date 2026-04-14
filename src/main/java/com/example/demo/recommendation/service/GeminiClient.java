@@ -39,7 +39,6 @@ public class GeminiClient {
                 // Définir la variable d'environnement pour le SDK Gemini
                 if (apiKey != null && !apiKey.isEmpty()) {
                     System.setProperty("GOOGLE_API_KEY", apiKey);
-                    System.setenv("GOOGLE_API_KEY", apiKey);
                 }
                 
                 this.client = new Client();

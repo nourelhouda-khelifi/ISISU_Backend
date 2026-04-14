@@ -87,6 +87,14 @@ public class QuestionService {
     }
 
     /**
+     * Récupérer TOUTES les questions (actives ET inactives)
+     * Utilisé par l'admin pour gérer toutes les questions
+     */
+    public List<Question> getAllQuestions() {
+        return questionRepository.findAll();
+    }
+
+    /**
      * Récupérer les questions d'une compétence donnée
      * (utilisé pour construire un test d'évaluation)
      */

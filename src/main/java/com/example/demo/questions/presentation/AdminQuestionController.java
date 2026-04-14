@@ -3,6 +3,8 @@ package com.example.demo.questions.presentation;
 import com.example.demo.questions.application.QuestionService;
 import com.example.demo.questions.domain.Choix;
 import com.example.demo.questions.domain.Question;
+import com.example.demo.questions.domain.enums.NiveauDifficulte;
+import com.example.demo.questions.domain.enums.TypeQuestion;
 import com.example.demo.questions.presentation.dto.ChoixDTO;
 import com.example.demo.questions.presentation.dto.CreateChoixDTO;
 import com.example.demo.questions.presentation.dto.CreateQuestionDTO;
@@ -25,7 +27,14 @@ import java.util.stream.Collectors;
  * ⚠️ Toutes les routes sont PROTÉGÉES (authentification requise)
  * Rôle requis : ADMIN
  *
- * Endpoints :
+ * GET Endpoints (Lecture - questions ACTIVES + INACTIVES):
+ *   - GET  /api/v1/admin/questions              → récupérer toutes les questions
+ *   - GET  /api/v1/admin/questions/{id}         → récupérer une question par ID
+ *   - GET  /api/v1/admin/questions?type=...     → filtrer par type
+ *   - GET  /api/v1/admin/questions?difficulte=...  → filtrer par difficulté
+ *   - GET  /api/v1/admin/questions?actif=true/false  → filtrer par état
+ *
+ * POST/PUT/DELETE Endpoints (Écriture):
  *   - POST   /api/v1/admin/questions              → créer une question
  *   - PUT    /api/v1/admin/questions/{id}         → modifier une question
  *   - DELETE /api/v1/admin/questions/{id}         → supprimer une question
@@ -41,6 +50,61 @@ import java.util.stream.Collectors;
 public class AdminQuestionController {
 
     private final QuestionService questionService;
+
+    /**
+     * Récupérer TOUTES les questions (actives ET inactives) avec filtres optionnels
+     * GET /api/v1/admin/questions
+     * GET /api/v1/admin/questions?type=QCM_SIMPLE
+     * GET /api/v1/admin/questions?difficulte=DIFFICILE
+     * GET /api/v1/admin/questions?actif=false
+     */
+    @GetMapping
+    public ResponseEntity<List<QuestionDTO>> getAllQuestions(
+        @RequestParam(required = false) TypeQuestion type,
+        @RequestParam(required = false) NiveauDifficulte difficulte,
+        @RequestParam(required = false) Boolean actif
+    ) {
+        log.info("GET /admin/questions - type: {}, difficulte: {}, actif: {}", type, difficulte, actif);
+        
+        // Récupérer TOUTES les questions (sans filtre actif)
+        List<Question> questions = questionService.getAllQuestions();
+        
+        // Filtrer selon les paramètres optionnels
+        if (type != null) {
+            questions = questions.stream()
+                .filter(q -> q.getType() == type)
+                .collect(Collectors.toList());
+        }
+        
+        if (difficulte != null) {
+            questions = questions.stream()
+                .filter(q -> q.getDifficulte() == difficulte)
+                .collect(Collectors.toList());
+        }
+        
+        if (actif != null) {
+            questions = questions.stream()
+                .filter(q -> q.isActif() == actif)
+                .collect(Collectors.toList());
+        }
+        
+        List<QuestionDTO> dtos = questions.stream()
+            .map(this::toDTO)
+            .collect(Collectors.toList());
+        
+        return ResponseEntity.ok(dtos);
+    }
+
+    /**
+     * Récupérer une question spécifique (admin)
+     * GET /api/v1/admin/questions/{id}
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<QuestionDTO> getQuestionById(@PathVariable Long id) {
+        log.info("GET /admin/questions/{}", id);
+        Question question = questionService.getQuestionById(id);
+        return ResponseEntity.ok(toDTO(question));
+    }
 
     /**
      * Créer une nouvelle question (admin)
