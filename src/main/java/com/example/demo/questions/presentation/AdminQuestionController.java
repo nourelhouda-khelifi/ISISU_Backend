@@ -5,6 +5,8 @@ import com.example.demo.questions.domain.Choix;
 import com.example.demo.questions.domain.Question;
 import com.example.demo.questions.domain.enums.NiveauDifficulte;
 import com.example.demo.questions.domain.enums.TypeQuestion;
+import com.example.demo.questions.presentation.dto.AdminChoixDTO;
+import com.example.demo.questions.presentation.dto.AdminQuestionDTO;
 import com.example.demo.questions.presentation.dto.ChoixDTO;
 import com.example.demo.questions.presentation.dto.CreateChoixDTO;
 import com.example.demo.questions.presentation.dto.CreateQuestionDTO;
@@ -57,9 +59,11 @@ public class AdminQuestionController {
      * GET /api/v1/admin/questions?type=QCM_SIMPLE
      * GET /api/v1/admin/questions?difficulte=DIFFICILE
      * GET /api/v1/admin/questions?actif=false
+     * 
+     * ✅ RETOURNE AdminQuestionDTO (inclut estCorrect)
      */
     @GetMapping
-    public ResponseEntity<List<QuestionDTO>> getAllQuestions(
+    public ResponseEntity<List<AdminQuestionDTO>> getAllQuestions(
         @RequestParam(required = false) TypeQuestion type,
         @RequestParam(required = false) NiveauDifficulte difficulte,
         @RequestParam(required = false) Boolean actif
@@ -88,8 +92,8 @@ public class AdminQuestionController {
                 .collect(Collectors.toList());
         }
         
-        List<QuestionDTO> dtos = questions.stream()
-            .map(this::toDTO)
+        List<AdminQuestionDTO> dtos = questions.stream()
+            .map(this::toAdminDTO)  // ✅ Utilise toAdminDTO (avec estCorrect)
             .collect(Collectors.toList());
         
         return ResponseEntity.ok(dtos);
@@ -98,12 +102,14 @@ public class AdminQuestionController {
     /**
      * Récupérer une question spécifique (admin)
      * GET /api/v1/admin/questions/{id}
+     * 
+     * ✅ RETOURNE AdminQuestionDTO (inclut estCorrect)
      */
     @GetMapping("/{id}")
-    public ResponseEntity<QuestionDTO> getQuestionById(@PathVariable Long id) {
+    public ResponseEntity<AdminQuestionDTO> getQuestionById(@PathVariable Long id) {
         log.info("GET /admin/questions/{}", id);
         Question question = questionService.getQuestionById(id);
-        return ResponseEntity.ok(toDTO(question));
+        return ResponseEntity.ok(toAdminDTO(question));  // ✅ Utilise toAdminDTO
     }
 
     /**
@@ -223,8 +229,10 @@ public class AdminQuestionController {
     }
 
     /**
-     * Convertir une entité Question en DTO
+     * Convertir une entité Question en DTO (pour retour vers student/user)
      * (masquer estCorrect, réponses correctes)
+     * 
+     * Utilisé par: POST, PUT, DELETE endpoints (jamais retourné à l'admin pour lecture)
      */
     private QuestionDTO toDTO(Question question) {
         List<ChoixDTO> choixDTOs = question.getChoix().stream()
@@ -251,6 +259,41 @@ public class AdminQuestionController {
             .dateCreation(question.getDateCreation())
             .competenceIds(competenceIds)
             .choix(choixDTOs)
+            .build();
+    }
+
+    /**
+     * Convertir une entité Question en AdminQuestionDTO (pour admin)
+     * ✅ INCLUT estCorrect dans les choix
+     * 
+     * Utilisé par: GET endpoints uniquement (pour affichage admin)
+     * Sécurité: Ne jamais retourner à un utilisateur normal
+     */
+    private AdminQuestionDTO toAdminDTO(Question question) {
+        List<AdminChoixDTO> adminChoixDTOs = question.getChoix().stream()
+            .map(choix -> AdminChoixDTO.builder()
+                .id(choix.getId())
+                .contenu(choix.getContenu())
+                .ordre(choix.getOrdre())
+                .estCorrect(choix.isEstCorrect())  // ✅ INCLUS pour admin
+                .build())
+            .collect(Collectors.toList());
+
+        List<Long> competenceIds = question.getCompetences().stream()
+            .map(com.example.demo.referentiel.domain.Competence::getId)
+            .collect(Collectors.toList());
+
+        return AdminQuestionDTO.builder()
+            .id(question.getId())
+            .enonce(question.getEnonce())
+            .type(question.getType())
+            .difficulte(question.getDifficulte())
+            .ponderation(question.getDifficulte().getPonderation())
+            .dureeSecondes(question.getDureeSecondes())
+            .actif(question.isActif())
+            .dateCreation(question.getDateCreation())
+            .competenceIds(competenceIds)
+            .choix(adminChoixDTOs)  // ✅ AdminChoixDTO avec estCorrect
             .build();
     }
 }
