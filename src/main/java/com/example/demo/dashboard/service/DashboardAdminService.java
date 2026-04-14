@@ -109,6 +109,98 @@ public class DashboardAdminService {
                 .build();
     }
     
+    /**
+     * Récupérer l'historique complet d'un étudiant (sessions + scores)
+     */
+    public AdminHistoriqueEtudiantDTO getHistoriqueEtudiant(Long idEtudiant) {
+        log.debug("Récupération de l'historique de l'étudiant {}", idEtudiant);
+        
+        Utilisateur etudiant = utilisateurRepository.findById(idEtudiant)
+                .orElseThrow(() -> new IllegalArgumentException("Étudiant non trouvé avec l'ID: " + idEtudiant));
+        
+        List<SessionTest> sessions = sessionTestRepository.findByUtilisateurOrderByDateDebutDesc(etudiant);
+        
+        // Convertir chaque session en DTO
+        List<AdminHistoriqueEtudiantDTO.SessionHistoriqueDTO> sessionsDTO = sessions.stream()
+                .map(session -> convertSessionToHistoriqueDTO(session))
+                .collect(Collectors.toList());
+        
+        // Calculer stats globales
+        long sessionsTerminees = sessions.stream()
+                .filter(s -> s.getStatut() == StatutSession.TERMINEE)
+                .count();
+        
+        Double scoreGlobalMoyen = sessions.stream()
+                .filter(s -> s.getStatut() == StatutSession.TERMINEE)
+                .flatMap(session -> scoreCompetenceRepository.findBySession(session).stream())
+                .mapToDouble(score -> score.getScoreObtenu() != null ? score.getScoreObtenu() : 0.0)
+                .average()
+                .orElse(0.0);
+        
+        return AdminHistoriqueEtudiantDTO.builder()
+                .utilisateurId(etudiant.getId())
+                .email(etudiant.getEmail())
+                .nom(etudiant.getNom())
+                .prenom(etudiant.getPrenom())
+                .totalSessions((long) sessions.size())
+                .sessionsTerminees(sessionsTerminees)
+                .scoreGlobalMoyen(Math.round(scoreGlobalMoyen * 100.0) / 100.0)
+                .sessions(sessionsDTO)
+                .build();
+    }
+    
+    /**
+     * Convertir une SessionTest en SessionHistoriqueDTO
+     */
+    private AdminHistoriqueEtudiantDTO.SessionHistoriqueDTO convertSessionToHistoriqueDTO(SessionTest session) {
+        List<AdminHistoriqueEtudiantDTO.CompetenceScoreDTO> scoresCompetences = 
+            scoreCompetenceRepository.findBySession(session).stream()
+                .map(score -> AdminHistoriqueEtudiantDTO.CompetenceScoreDTO.builder()
+                        .competenceId(score.getCompetence().getId())
+                        .nom(score.getCompetence().getIntitule())
+                        .scoreObtenu(score.getScoreObtenu())
+                        .niveauAtteint(score.getNiveauAtteint() != null ? score.getNiveauAtteint().toString() : "N/A")
+                        .statut(score.getStatut() != null ? score.getStatut().toString() : "N/A")
+                        .nbBonnesReponses(score.getNbBonnesReponses())
+                        .nbQuestions(score.getNbQuestions())
+                        .build())
+                .collect(Collectors.toList());
+        
+        // Calculer durée en minutes
+        Integer dureeMinutes = 0;
+        if (session.getDateDebut() != null && session.getDateFin() != null) {
+            dureeMinutes = (int) java.time.temporal.ChronoUnit.MINUTES
+                    .between(session.getDateDebut(), session.getDateFin());
+        }
+        
+        // Score global de la session (moyenne des scores)
+        Double scoreGlobal = scoresCompetences.isEmpty() ? 0.0 :
+                scoresCompetences.stream()
+                        .mapToDouble(s -> s.getScoreObtenu() != null ? s.getScoreObtenu() : 0.0)
+                        .average()
+                        .orElse(0.0);
+        
+        // Calculer nombre de questions
+        Integer totalQuestions = session.getQuestionSessions().size();
+        Integer questionsRepondues = (int) session.getQuestionSessions().stream()
+                .filter(qs -> qs.getEstRepondue() != null && qs.getEstRepondue())
+                .count();
+        
+        return AdminHistoriqueEtudiantDTO.SessionHistoriqueDTO.builder()
+                .sessionId(session.getId())
+                .numeroSession(session.getNumeroSession())
+                .dateDebut(session.getDateDebut())
+                .dateFin(session.getDateFin())
+                .statut(session.getStatut().toString())
+                .dureeMinutes(dureeMinutes)
+                .scoreGlobal(Math.round(scoreGlobal * 100.0) / 100.0)
+                .totalQuestions(totalQuestions)
+                .questionsRepondues(questionsRepondues)
+                .scoresCompetences(scoresCompetences)
+                .raison(session.getRaison())
+                .build();
+    }
+    
     // ============ Méthodes utilitaires ============
     
     private UtilisateurDashboardDTO convertToUtilisateurDTO(Utilisateur user) {

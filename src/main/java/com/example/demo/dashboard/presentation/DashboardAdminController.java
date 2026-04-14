@@ -59,6 +59,19 @@ public class DashboardAdminController {
     }
     
     /**
+     * GET /api/v1/dashboard/admin/utilisateurs/{idEtudiant}/historique
+     * Récupérer l'historique complet d'un étudiant (sessions + scores)
+     */
+    @GetMapping("/utilisateurs/{idEtudiant}/historique")
+    @Operation(summary = "Historique complet d'un étudiant (sessions et résultats)")
+    public ResponseEntity<ApiResponse<AdminHistoriqueEtudiantDTO>> getHistoriqueEtudiant(
+            @PathVariable Long idEtudiant) {
+        log.debug("GET /utilisateurs/{}/historique", idEtudiant);
+        AdminHistoriqueEtudiantDTO historique = dashboardAdminService.getHistoriqueEtudiant(idEtudiant);
+        return ResponseEntity.ok(ApiResponse.success(200, "Historique de l'étudiant récupéré", historique));
+    }
+    
+    /**
      * GET /api/v1/dashboard/admin/statistiques/sessions
      * Récupérer les statistiques des sessions
      */
