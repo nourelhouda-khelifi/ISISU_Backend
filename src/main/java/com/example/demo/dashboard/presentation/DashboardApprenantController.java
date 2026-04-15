@@ -7,6 +7,7 @@ import com.example.demo.common.response.ApiResponse;
 import com.example.demo.dashboard.dto.*;
 import com.example.demo.dashboard.service.DashboardApprenantService;
 import com.example.demo.evaluation.domain.SessionTest;
+import com.example.demo.referentiel.domain.enums.Semestre;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -98,4 +99,35 @@ public class DashboardApprenantController {
         List<ActiviteDTO> activite = dashboardApprenantService.getActiviteRecente(user, 7);
         return ResponseEntity.ok(ApiResponse.success(200, "Activité récupérée", activite));
     }
+    
+    /**
+     * GET /api/v1/dashboard/apprenant/ue/all
+     * Récupérer les scores par UE pour TOUS les semestres
+     */
+    @GetMapping("/ue/all")
+    @Operation(summary = "Scores agrégés par UE (tous les semestres)")
+    public ResponseEntity<ApiResponse<List<UEScoreDTO>>> getScoresToutesUE() {
+        log.debug("GET /ue/all - Récupération des scores par UE (tous)");
+        Utilisateur user = authenticationFacade.getCurrentUser();
+        List<UEScoreDTO> scores = dashboardApprenantService.getScoresToutesUE(user);
+        return ResponseEntity.ok(ApiResponse.success(200, "Scores UE récupérés", scores));
+    }
+    
+    /**
+     * GET /api/v1/dashboard/apprenant/ue/{semestre}
+     * Récupérer les scores par UE pour un semestre spécifique
+     *
+     * @param semestre S5, S6, etc.
+     */
+    @GetMapping("/ue/{semestre}")
+    @Operation(summary = "Scores agrégés par UE pour un semestre")
+    public ResponseEntity<ApiResponse<List<UEScoreDTO>>> getScoresParUE(@PathVariable String semestre) {
+        log.debug("GET /ue/{} - Récupération des scores par UE", semestre);
+        Utilisateur user = authenticationFacade.getCurrentUser();
+        Semestre sem = Semestre.valueOf("S" + semestre);
+        List<UEScoreDTO> scores = dashboardApprenantService.getScoresParUE(user, sem);
+        return ResponseEntity.ok(ApiResponse.success(200, "Scores UE récupérés", scores));
+    }
 }
+
+

@@ -8,6 +8,11 @@ import com.example.demo.evaluation.domain.enums.StatutSession;
 import com.example.demo.evaluation.repository.ScoreCompetenceRepository;
 import com.example.demo.evaluation.repository.SessionTestRepository;
 import com.example.demo.recommendation.service.RecommendationService;
+import com.example.demo.referentiel.domain.UniteEnseignement;
+import com.example.demo.referentiel.domain.ModuleFIE;
+import com.example.demo.referentiel.domain.enums.Semestre;
+import com.example.demo.referentiel.infrastructure.UniteEnseignementRepository;
+import com.example.demo.referentiel.infrastructure.ModuleFIERepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -28,6 +33,8 @@ public class DashboardApprenantService {
     
     private final SessionTestRepository sessionTestRepository;
     private final ScoreCompetenceRepository scoreCompetenceRepository;
+    private final UniteEnseignementRepository uniteEnseignementRepository;
+    private final ModuleFIERepository moduleFIERepository;
     private final RecommendationService recommendationService;
     
     /**
@@ -150,6 +157,138 @@ public class DashboardApprenantService {
                         .resultat(String.format("%.2f", calculerScoreSession(session)))
                         .build())
                 .collect(Collectors.toList());
+    }
+    
+    /**
+     * Récupérer les scores agrégés par UE
+     * Calcule la moyenne des compétences pour chaque UE
+     */
+    public List<UEScoreDTO> getScoresParUE(Utilisateur user, Semestre semestre) {
+        log.debug("Récupération des scores par UE pour user {} - S{}", user.getId(), semestre);
+        
+        // Récupérer toutes les sessions de l'apprenant
+        List<SessionTest> sessions = sessionTestRepository.findByUtilisateurOrderByDateDebutDesc(user);
+        if (sessions.isEmpty()) return Collections.emptyList();
+        
+        // Récupérer tous les scores de cet apprenant
+        List<ScoreCompetence> allScores = sessions.stream()
+                .flatMap(s -> scoreCompetenceRepository.findBySession(s).stream())
+                .collect(Collectors.toList());
+        
+        if (allScores.isEmpty()) return Collections.emptyList();
+        
+        // Récupérer les UE du semestre spécifié
+        List<UniteEnseignement> ues = uniteEnseignementRepository.findBySemestre(semestre);
+        
+        return ues.stream()
+                .map(ue -> calculerScoreUE(ue, allScores))
+                .sorted((a, b) -> b.getScoreMoyenUE().compareTo(a.getScoreMoyenUE()))
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * Récupérer les scores par UE pour TOUS les semestres
+     */
+    public List<UEScoreDTO> getScoresToutesUE(Utilisateur user) {
+        log.debug("Récupération des scores par UE (toutes) pour user {}", user.getId());
+        
+        List<SessionTest> sessions = sessionTestRepository.findByUtilisateurOrderByDateDebutDesc(user);
+        if (sessions.isEmpty()) return Collections.emptyList();
+        
+        List<ScoreCompetence> allScores = sessions.stream()
+                .flatMap(s -> scoreCompetenceRepository.findBySession(s).stream())
+                .collect(Collectors.toList());
+        
+        if (allScores.isEmpty()) return Collections.emptyList();
+        
+        // Récupérer toutes les UE
+        List<UniteEnseignement> ues = uniteEnseignementRepository.findAll();
+        
+        return ues.stream()
+                .map(ue -> calculerScoreUE(ue, allScores))
+                .filter(ueScore -> ueScore.getNbCompetencesEvaluees() > 0)
+                .sorted((a, b) -> b.getScoreMoyenUE().compareTo(a.getScoreMoyenUE()))
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * Calculer le score pour une UE spécifique
+     */
+    private UEScoreDTO calculerScoreUE(UniteEnseignement ue, List<ScoreCompetence> allScores) {
+        // Récupérer les modules de cette UE
+        List<ModuleFIE> modules = moduleFIERepository.findByUniteEnseignementId(ue.getId());
+        
+        List<Long> moduleIds = modules.stream().map(ModuleFIE::getId).collect(Collectors.toList());
+        
+        // Filtrer les scores pour les compétences appartenant aux modules de cette UE
+        List<ScoreCompetence> scoresUE = allScores.stream()
+                .filter(score -> moduleIds.contains(score.getCompetence().getModule().getId()))
+                .collect(Collectors.toList());
+        
+        // Calculer les statistiques
+        Double scoreMoyen = scoresUE.isEmpty() ? 0.0
+                : scoresUE.stream()
+                    .mapToDouble(score -> score.getScoreObtenu() != null ? score.getScoreObtenu() : 0.0)
+                    .average()
+                    .orElse(0.0);
+        
+        int nbCompetencesEvaluees = scoresUE.size();
+        
+        long nbCompetencesAcquises = scoresUE.stream()
+                .filter(score -> score.getStatut() != null 
+                        && ("ACQUIS".equals(score.getStatut().toString()) 
+                            || "MAITRISE".equals(score.getStatut().toString())))
+                .count();
+        
+        Double tauxAcquisition = nbCompetencesEvaluees > 0 
+                ? (nbCompetencesAcquises * 100.0) / nbCompetencesEvaluees
+                : 0.0;
+        
+        String statut;
+        if (scoreMoyen < 40) statut = "LACUNE";
+        else if (scoreMoyen < 60) statut = "A_RENFORCER";
+        else statut = "BON";
+        
+        // Calculer les scores par module
+        List<UEScoreDTO.ModuleScoreDTO> moduleScores = modules.stream()
+                .map(module -> {
+                    List<ScoreCompetence> scoresModule = scoresUE.stream()
+                            .filter(score -> score.getCompetence().getModule().getId().equals(module.getId()))
+                            .collect(Collectors.toList());
+                    
+                    Double scoreMoyenModule = scoresModule.isEmpty() ? 0.0
+                            : scoresModule.stream()
+                                .mapToDouble(score -> score.getScoreObtenu() != null ? score.getScoreObtenu() : 0.0)
+                                .average()
+                                .orElse(0.0);
+                    
+                    String statutModule;
+                    if (scoreMoyenModule < 40) statutModule = "LACUNE";
+                    else if (scoreMoyenModule < 60) statutModule = "A_RENFORCER";
+                    else statutModule = "BON";
+                    
+                    return UEScoreDTO.ModuleScoreDTO.builder()
+                            .moduleId(module.getId())
+                            .codeModule(module.getCode())
+                            .nomModule(module.getNom())
+                            .scoreMoyenModule(Math.round(scoreMoyenModule * 100.0) / 100.0)
+                            .nbCompetences(scoresModule.size())
+                            .statut(statutModule)
+                            .build();
+                })
+                .collect(Collectors.toList());
+        
+        return UEScoreDTO.builder()
+                .ueId(ue.getId())
+                .codeUE(ue.getCode())
+                .libelle(ue.getLibelle())
+                .scoreMoyenUE(Math.round(scoreMoyen * 100.0) / 100.0)
+                .nbCompetencesEvaluees(nbCompetencesEvaluees)
+                .nbCompetencesAcquises((int) nbCompetencesAcquises)
+                .tauxAcquisition(Math.round(tauxAcquisition * 100.0) / 100.0)
+                .moduleScores(moduleScores)
+                .statut(statut)
+                .build();
     }
     
     // ============ Méthodes utilitaires ============
