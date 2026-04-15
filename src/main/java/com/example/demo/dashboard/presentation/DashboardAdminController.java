@@ -6,6 +6,7 @@ import com.example.demo.common.response.ApiResponse;
 import com.example.demo.dashboard.dto.*;
 import com.example.demo.dashboard.service.DashboardAdminService;
 import com.example.demo.dashboard.service.StatistiquesService;
+import com.example.demo.referentiel.domain.enums.Semestre;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -69,6 +70,34 @@ public class DashboardAdminController {
         log.debug("GET /utilisateurs/{}/historique", idEtudiant);
         AdminHistoriqueEtudiantDTO historique = dashboardAdminService.getHistoriqueEtudiant(idEtudiant);
         return ResponseEntity.ok(ApiResponse.success(200, "Historique de l'étudiant récupéré", historique));
+    }
+    
+    /**
+     * GET /api/v1/dashboard/admin/utilisateurs/{idEtudiant}/ue/all
+     * Récupérer les scores par UE pour un étudiant (tous les semestres)
+     */
+    @GetMapping("/utilisateurs/{idEtudiant}/ue/all")
+    @Operation(summary = "Scores agrégés par UE pour un étudiant (tous les semestres)")
+    public ResponseEntity<ApiResponse<List<UEScoreDTO>>> getScoresUEToutsSemestresEtudiant(
+            @PathVariable Long idEtudiant) {
+        log.debug("GET /utilisateurs/{}/ue/all", idEtudiant);
+        List<UEScoreDTO> scores = dashboardAdminService.getScoresUEToutsSemestresPourEtudiant(idEtudiant);
+        return ResponseEntity.ok(ApiResponse.success(200, "Scores UE récupérés pour l'étudiant", scores));
+    }
+    
+    /**
+     * GET /api/v1/dashboard/admin/utilisateurs/{idEtudiant}/ue/{semestre}
+     * Récupérer les scores par UE pour un étudiant et un semestre spécifique
+     */
+    @GetMapping("/utilisateurs/{idEtudiant}/ue/{semestre}")
+    @Operation(summary = "Scores agrégés par UE pour un étudiant (semestre spécifique)")
+    public ResponseEntity<ApiResponse<List<UEScoreDTO>>> getScoresUEEtudiant(
+            @PathVariable Long idEtudiant,
+            @PathVariable String semestre) {
+        log.debug("GET /utilisateurs/{}/ue/{}", idEtudiant, semestre);
+        Semestre sem = Semestre.valueOf("S" + semestre);
+        List<UEScoreDTO> scores = dashboardAdminService.getScoresUEPourEtudiant(idEtudiant, sem);
+        return ResponseEntity.ok(ApiResponse.success(200, "Scores UE récupérés pour l'étudiant", scores));
     }
     
     /**
